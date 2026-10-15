@@ -295,7 +295,7 @@ async function load(){const r=await db.from("habits").select("*").order("created
 $("lf").onsubmit=async e=>{e.preventDefault();$("lerr").textContent="";
   const r=await db.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});
   if(r.error)$("lerr").textContent="Login fehlgeschlagen: "+r.error.message};
-$("out").onclick=()=>db.auth.signOut();
+$("out").onclick=async()=>{try{await db.auth.signOut({scope:"local"})}catch(e){}try{Object.keys(localStorage).filter(k=>k.startsWith("sb-")).forEach(k=>localStorage.removeItem(k))}catch(e){}habits=[];$("app").hidden=true;$("login").hidden=false;$("pw").value=""};
 db.auth.onAuthStateChange((ev,s)=>{
   $("login").hidden=!!s;$("app").hidden=!s;
   if(s&&(ev==="INITIAL_SESSION"||ev==="SIGNED_IN"))setTimeout(load,0);
