@@ -3,7 +3,15 @@
 MIND ist mein privater Habit Tracker: eine Datei `public/index.html`, Supabase (Login, Datenbank, Row Level Security, Registrierung gesperrt), Cloudflare Workers (veröffentlicht automatisch bei jedem Commit auf `main`). GitHub ist die Quelle der Wahrheit.
 
 ## Zu Beginn jeder Session
-Lies zuerst `PROJEKTDOKU.md`, `ROADMAP.md` und `CHANGELOG.md`.
+1. Lies zuerst `PROJEKTDOKU.md`, `ROADMAP.md` und `CHANGELOG.md`.
+2. Lies mein Gedächtnis im Obsidian-Vault: `~/Documents/Gehirn/Memory/Claude Gedächtnis.md` und die Themenseite `~/Documents/Gehirn/Themen/MIND Habit Tracker.md`. Für den Vault gelten zusätzlich die Regeln in `~/Documents/Gehirn/CLAUDE.md`.
+
+## Mein Gehirn (Obsidian-Vault) aktuell halten
+Der Vault `~/Documents/Gehirn` ist mein Wissen. Was wir hier erarbeiten, muss dort landen, nicht nur im Chat oder im Repo:
+- Pläne, Entscheidungen, Analysen und Anleitungen als neue Notiz in `~/Documents/Gehirn/Habit Tracker/` (mit `erstellt:`-Datum, Link auf [[MIND Habit Tracker]] und Wikilinks zu verwandten Notizen). Neu anlegen ist erlaubt, bestehende Notizen nur nach Rückfrage ändern.
+- Wenn sich etwas Wichtiges ändert (Stand, Ablauf, Zugänge), schlag mir am Ende vor, `Memory/Claude Gedächtnis.md` zu ergänzen. Schreib dort erst nach meinem Ja.
+- Sag mir am Ende jeder Aufgabe, welche Notiz du angelegt oder geändert hast.
+- Nichts aus `Datenbank-Backups/` oder anderen privaten Daten in den Vault oder ins Repo kopieren.
 
 ## Arbeitsregeln
 - Ändere nur, was ich verlange, sonst nichts.
