@@ -21,7 +21,7 @@ Stand: 06.11.2026. Reihenfolge: erst Funktionen, Oberfläche und Struktur (Phase
 - [x] **A2 Optionale Zusatzfelder anlegen:** Bereich „Mehr Optionen" im Formular
   - [x] Mehrfach-Habit mit Tagesziel (z. B. Wasser 6× am Tag), Standard 1× = wie bisher
   - [x] Tageszeit (Morgen, Mittag, Abend oder Uhrzeit), Standard keine
-- [ ] **A3 Profil und Einstellungen:** Tabelle `profiles` (Name, Zeitzone, `plan`), Seite „Einstellungen", Erinnerung wandert von localStorage in die Datenbank
+- [x] **A3 Profil und Einstellungen:** Tabelle `profiles` (Name, Zeitzone, `plan`), Seite „Einstellungen", Erinnerung wandert von localStorage in die Datenbank
 - [ ] **A4 Bessere Benachrichtigungen:** Prüfen, was geht (installierbare Web-App, Push, E-Mail). Entscheidung vorher.
 - [ ] **A5 Integrierte KI:** Schlüssel nur auf dem Server (Supabase-Funktion), Limit pro Nutzer, Kosten im Blick
 - [ ] **A6 Mehr Statistiken:** Verlauf, Vergleiche, Serien-Rekorde (später teilweise Premium)
