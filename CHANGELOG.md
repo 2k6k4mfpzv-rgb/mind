@@ -12,6 +12,11 @@ Private Habit-Tracker-Website. Frontend: eine Datei (`public/index.html`). Daten
 
 ## Änderungen (neueste zuerst)
 
+### 2026-11-06 – Regel: Git-Stand immer frisch von GitHub prüfen
+- **Problem:** Eine neue Session meldete, der Branch `a2-zusatzfelder` existiere noch auf GitHub. Er war aber schon gelöscht. Sie hatte nur einen veralteten lokalen Verweis gesehen.
+- **Änderung:** `CLAUDE.md` verlangt jetzt `git fetch --prune`, `git ls-remote --heads origin` und `gh pr list`, bevor etwas über Branches oder Pull Requests gesagt wird, und `git fetch --prune` nach jedem Merge.
+- **Nichts an der App geändert.**
+
 ### 2026-11-06 – Obsidian-Vault mit dem Projekt verbunden
 - **Warum:** Was mit Claude Code erarbeitet wird, soll immer auch im Obsidian-Vault „Gehirn“ landen.
 - **Änderung:** `CLAUDE.md` sagt jetzt: zu Beginn Gedächtnis und Themenseite im Vault lesen, Ergebnisse als Notiz in `Gehirn/Habit Tracker/` speichern, Gedächtnis-Ergänzungen vorschlagen. Der Ordner liegt jetzt in `~/Documents/MIND Habit Tracker/Code (aktuell)`.

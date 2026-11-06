@@ -8,6 +8,7 @@ Ich starte Sessions normalerweise im Obsidian-Vault `~/Documents/Gehirn` (meine 
 1. Lies zuerst `~/Documents/Gehirn/Habit Tracker/MIND – Aktueller Stand.md`. Dort steht, wo wir stehen und was als Nächstes kommt.
 2. Lies `PROJEKTDOKU.md`, `ROADMAP.md` und `CHANGELOG.md`.
 3. Lies mein Gedächtnis im Obsidian-Vault: `~/Documents/Gehirn/Memory/Claude Gedächtnis.md` und die Themenseite `~/Documents/Gehirn/Themen/MIND Habit Tracker.md`. Für den Vault gelten zusätzlich die Regeln in `~/Documents/Gehirn/CLAUDE.md`.
+4. Bevor du etwas über Branches oder Pull Requests sagst, hol den echten Stand von GitHub: `git fetch --prune`, dann `git ls-remote --heads origin` und `gh pr list`. Lokale Verweise wie `remotes/origin/...` können veraltet sein und beweisen nicht, dass ein Branch auf GitHub noch existiert.
 
 ## Mein Gehirn (Obsidian-Vault) aktuell halten
 Der Vault `~/Documents/Gehirn` ist mein Wissen. Was wir hier erarbeiten, muss dort landen, nicht nur im Chat oder im Repo:
@@ -20,7 +21,7 @@ Der Vault `~/Documents/Gehirn` ist mein Wissen. Was wir hier erarbeiten, muss do
 ## Arbeitsregeln
 - Ändere nur, was ich verlange, sonst nichts.
 - Alles Neue ist optional und standardmäßig aus. Bestehende Habits und Daten müssen unverändert funktionieren.
-- Arbeite auf einem eigenen Branch und committe dort. Claude darf den Branch pushen und mit `gh` einen Pull Request öffnen (frag mich vorher kurz). Mergen auf `main` nur nach meinem ausdrücklichen Ja, weil `main` sofort live geht.
+- Arbeite auf einem eigenen Branch und committe dort. Claude darf den Branch pushen und mit `gh` einen Pull Request öffnen (frag mich vorher kurz). Mergen auf `main` nur nach meinem ausdrücklichen Ja, weil `main` sofort live geht. Nach dem Merge den Branch löschen (`gh pr merge --delete-branch`) und danach `git fetch --prune` ausführen, damit keine veralteten Verweise übrig bleiben.
 - Datenbank-Änderungen schreibst du nur als SQL-Datei in `docs/` (mit Datum im Namen, z. B. `docs/2026-11-06_name.sql`). Claude darf sie über den Supabase-Konnektor ausführen, aber nur nach meinem ausdrücklichen Ja und immer erst nach einem Backup der Tabelle `habits` (als JSON in `~/Documents/MIND Habit Tracker/Datenbank-Backups/`, nie ins Repo). Die SQL muss laufen, bevor der Code auf `main` geht.
 - Keine Popups (`confirm`/`alert`). Keine Schlüssel oder Passwörter in den Code (der öffentliche `anon`-Key ist die einzige Ausnahme, der `service_role`-Key nie).
 - Qualität vor Quantität. Ich bin Anfänger: erkläre mir Schritte konkret und kurz, auf Deutsch.
