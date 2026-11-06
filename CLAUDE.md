@@ -3,11 +3,13 @@
 MIND ist mein privater Habit Tracker: eine Datei `public/index.html`, Supabase (Login, Datenbank, Row Level Security, Registrierung gesperrt), Cloudflare Workers (veröffentlicht automatisch bei jedem Commit auf `main`). GitHub ist die Quelle der Wahrheit.
 
 ## Zu Beginn jeder Session
-1. Lies zuerst `PROJEKTDOKU.md`, `ROADMAP.md` und `CHANGELOG.md`.
-2. Lies mein Gedächtnis im Obsidian-Vault: `~/Documents/Gehirn/Memory/Claude Gedächtnis.md` und die Themenseite `~/Documents/Gehirn/Themen/MIND Habit Tracker.md`. Für den Vault gelten zusätzlich die Regeln in `~/Documents/Gehirn/CLAUDE.md`.
+1. Lies zuerst `~/Documents/Gehirn/Habit Tracker/MIND – Aktueller Stand.md`. Dort steht, wo wir stehen und was als Nächstes kommt.
+2. Lies `PROJEKTDOKU.md`, `ROADMAP.md` und `CHANGELOG.md`.
+3. Lies mein Gedächtnis im Obsidian-Vault: `~/Documents/Gehirn/Memory/Claude Gedächtnis.md` und die Themenseite `~/Documents/Gehirn/Themen/MIND Habit Tracker.md`. Für den Vault gelten zusätzlich die Regeln in `~/Documents/Gehirn/CLAUDE.md`.
 
 ## Mein Gehirn (Obsidian-Vault) aktuell halten
 Der Vault `~/Documents/Gehirn` ist mein Wissen. Was wir hier erarbeiten, muss dort landen, nicht nur im Chat oder im Repo:
+- **Am Ende jeder Session (und nach jedem größeren Schritt) aktualisierst du `Habit Tracker/MIND – Aktueller Stand.md`:** „Jetzt gerade“ auf den neuen Stand bringen, oben im Verlauf einen kurzen Eintrag mit Datum ergänzen, `geändert:` anpassen. Diese eine Notiz darfst du ohne Rückfrage ändern. Halb fertige Arbeit (offener Branch, Pull Request, nicht ausgeführte SQL) muss dort stehen.
 - Pläne, Entscheidungen, Analysen und Anleitungen als neue Notiz in `~/Documents/Gehirn/Habit Tracker/` (mit `erstellt:`-Datum, Link auf [[MIND Habit Tracker]] und Wikilinks zu verwandten Notizen). Neu anlegen ist erlaubt, bestehende Notizen nur nach Rückfrage ändern.
 - Wenn sich etwas Wichtiges ändert (Stand, Ablauf, Zugänge), schlag mir am Ende vor, `Memory/Claude Gedächtnis.md` zu ergänzen. Schreib dort erst nach meinem Ja.
 - Sag mir am Ende jeder Aufgabe, welche Notiz du angelegt oder geändert hast.
