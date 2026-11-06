@@ -34,9 +34,9 @@ README.md           (Platzhalter von GitHub)
 ```
 `wrangler.jsonc`:
 ```json
-{ "name": "mind", "compatibility_date": "2026-10-15", "assets": { "directory": "./public" } }
+{ "name": "mind", "compatibility_date": "2026-10-15", "assets": { "directory": "./public" }, "previews": {} }
 ```
-Der Name `mind` muss dem Projektnamen in Cloudflare entsprechen. Dateinamen immer kleingeschrieben, ohne Leerzeichen.
+Der Name `mind` muss dem Projektnamen in Cloudflare entsprechen. Der leere Block `previews` ist nötig, damit Cloudflare für jeden Pull Request eine Vorschau-Seite baut (seit 06.11.2026). Die Vorschau nutzt dieselbe echte Datenbank. Dateinamen immer kleingeschrieben, ohne Leerzeichen.
 
 ## 4. Datenbank
 Eine Tabelle `public.habits`:
@@ -83,6 +83,7 @@ Eine Tabelle `public.habits`:
 
 ## 8. Bekannte Stolpersteine
 - Cloudflare braucht `wrangler.jsonc` und den Ordner `public`, sonst Fehler „Could not detect a directory containing static files".
+- Ohne `"previews": {}` in `wrangler.jsonc` scheitern Vorschau-Builds mit „missing a `previews` block“.
 - Falsch geschriebene oder falsch benannte `index.html` (Großbuchstaben, Leerzeichen) führt zu einer weißen Seite.
 - Ohne `docs/schema.sql` in Supabase gibt es die Meldung „Could not find the table 'public.habits'".
 - **Offen:** Der Abmelden-Button reagierte in Safari nicht. Er wurde so umgebaut, dass er lokal abmeldet und den Login-Eintrag im Browser löscht. Ob das das Problem endgültig löst, ist nicht bestätigt.

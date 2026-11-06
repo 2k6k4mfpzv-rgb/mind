@@ -12,6 +12,12 @@ Private Habit-Tracker-Website. Frontend: eine Datei (`public/index.html`). Daten
 
 ## Änderungen (neueste zuerst)
 
+### 2026-11-06 – Vorschau-Seiten für Pull Requests
+- **Problem:** Cloudflare konnte für Branches außer `main` keine Vorschau bauen. Fehler: „Your Wrangler configuration is missing a `previews` block“.
+- **Änderung:** In `wrangler.jsonc` den leeren Block `"previews": {}` ergänzt. Jeder Pull Request bekommt jetzt eine eigene Test-Adresse, die Cloudflare in den Pull Request schreibt.
+- **Hinweis:** Die Vorschau nutzt dieselbe echte Supabase-Datenbank. Was man dort ändert, ist auch in den echten Daten.
+- **Nichts sonst geändert.** Die echte Seite auf `main` wird wie bisher gebaut.
+
 ### 2026-11-06 – A2: Optionale Zusatzfelder (Tagesziel, Tageszeit)
 - **Warum:** Manche Habits macht man mehrmals am Tag (z. B. Wasser 6×), und eine Tageszeit hilft beim Planen (Roadmap A2).
 - **Datenbank:** Neue Spalten `target` (Tagesziel, Standard 1, erlaubt 1–20) und `daytime` (Standard leer; `morgen`, `mittag`, `abend` oder Uhrzeit `HH:MM`). Datei `docs/2026-11-06_a2-zusatzfelder.sql`. **Vor dem Merge auf `main` in Supabase ausführen.** Bestehende Daten werden nicht umgeschrieben.
