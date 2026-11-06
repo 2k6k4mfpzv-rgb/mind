@@ -17,7 +17,9 @@ Private Habit-Tracker-Website. Frontend: eine Datei (`public/index.html`). Daten
 - **Datenbank:** Neue Tabelle `profiles` (eine Zeile pro Konto: `name`, `timezone`, `plan` Standard `free`, `rem_on`, `rem_time`). Row Level Security: nur das eigene Profil lesen und ändern. Aus der App dürfen nur `name`, `timezone`, `rem_on` und `rem_time` geändert werden, `plan` nie. Ein Trigger legt für jedes neue Konto automatisch ein Profil an, bestehende Konten bekommen eins beim Einspielen. Datei `docs/2026-11-06_a3-profiles.sql`. Die Tabelle `habits` bleibt unverändert.
 - **Änderung in `public/index.html`:**
   - Neuer Knopf „Einstellungen“ oben neben „Abmelden“. Er öffnet eine eigene Ansicht mit Name, Zeitzone, Tarif (nur Anzeige), Erinnerung sowie Export und Import. Der Klappbereich „Erinnerung, Export und Import“ unten in der Übersicht fällt dafür weg.
-  - Änderungen werden sofort gespeichert.
+  - Gestaltung als Einstellungsliste in einer Karte im Stil der Übersicht: Bezeichnung links, Feld rechts, dünne Trennlinien, Gruppen Profil, Erinnerung und Daten. Schalter statt Haken, Zeitzone mit eigenem Pfeil, Tarif als Plakette. Die Uhrzeit ist ausgegraut, solange die Erinnerung aus ist.
+  - Daten: „Daten kopieren“ legt das Backup direkt in die Zwischenablage. Das Textfeld zum Einfügen erscheint erst unter „Aus Backup wiederherstellen“.
+  - Änderungen werden sofort gespeichert, oben in der Karte erscheint kurz „Gespeichert“ (nicht bei automatischen Speicherungen beim Laden).
   - Die Erinnerung (an/aus, Uhrzeit) steht jetzt im Profil und gilt auf allen Geräten. Die Erlaubnis für Benachrichtigungen gibt jedes Gerät selbst. Fehlt sie, erscheinen ein Hinweis und der Knopf „Benachrichtigungen auf diesem Gerät erlauben“.
   - Einmalige Übernahme: Wer die Erinnerung bisher im Browser an hatte, bekommt sie beim ersten Laden ins Profil übernommen. Im Browser bleibt danach nur noch, ob heute schon erinnert wurde.
   - Ist die Zeitzone leer, trägt die App die Zeitzone des Geräts ein. Die App rechnet weiter mit der Gerätezeit. Die Zeitzone wird erst für A4 gebraucht.
