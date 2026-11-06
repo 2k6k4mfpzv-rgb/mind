@@ -105,8 +105,9 @@ details.more summary{font-size:.9rem}
 <main id="app" hidden>
 <h1>MIND</h1>
 <p class="note" id="err" role="alert" style="color:var(--ink)"></p>
+<div id="ov">
 <div class="panel">
-  <div class="ph"><span class="cap">MIND / Übersicht</span><span class="cap"><span id="date"></span> · <button id="out" class="del">Abmelden</button></span></div>
+  <div class="ph"><span class="cap">MIND / Übersicht</span><span class="cap"><span id="date"></span> · <button id="setb" class="del">Einstellungen</button> · <button id="out" class="del">Abmelden</button></span></div>
   <div class="pb">
     <div class="left">
       <div class="nav">
@@ -150,21 +151,41 @@ details.more summary{font-size:.9rem}
     <button class="btn" type="submit">Hinzufügen</button>
   </form>
 </section>
+</div>
 
-<details id="io">
-  <summary>Erinnerung, Export und Import</summary>
-  <div class="set" style="margin:22px 0 6px">
-    <label class="set"><input type="checkbox" id="remOn"> Täglich um</label>
-    <input type="time" id="remTime" value="20:00">
+<!-- A3: Einstellungen (eigene Ansicht, Profil liegt in der Tabelle profiles) -->
+<div id="st" hidden>
+<section class="blk" style="margin-top:0">
+  <div><div class="cap">Einstellungen</div><h2>Dein Profil.</h2><p class="note">Gilt auf allen Geräten. Änderungen werden sofort gespeichert.</p><button class="btn ghost" id="back" style="margin-top:18px">Zurück zur Übersicht</button></div>
+  <div class="opts" style="margin-top:0">
+    <label class="full">Name<input id="pname" maxlength="40" placeholder="Name (optional)" autocomplete="name"></label>
+    <label class="full">Zeitzone<select id="ptz"></select></label>
+    <p class="note full" style="margin:0">Tarif: <span id="pplan"></span></p>
   </div>
-  <p class="note" id="remNote" style="margin-top:0">Benachrichtigung, wenn heute noch Habits offen sind. Funktioniert nur, solange die Seite geöffnet ist.</p>
-  <textarea id="data" aria-label="Daten als JSON" spellcheck="false" style="margin-top:24px"></textarea>
-  <div class="set" style="margin-top:10px">
-    <button class="btn" id="copy">Daten kopieren</button>
-    <button class="btn ghost" id="imp">Aus Feld importieren</button>
+</section>
+<section class="blk">
+  <div><div class="cap">Erinnerung</div><h2>Nicht vergessen.</h2></div>
+  <div>
+    <div class="set" style="margin-bottom:6px">
+      <label class="set"><input type="checkbox" id="remOn"> Täglich um</label>
+      <input type="time" id="remTime" value="20:00">
+    </div>
+    <p class="note" id="remNote" style="margin-top:0">Benachrichtigung, wenn heute noch Habits offen sind. Funktioniert nur, solange die Seite geöffnet ist.</p>
+    <button class="del" id="remPerm" style="padding:0" hidden>Benachrichtigungen auf diesem Gerät erlauben</button>
   </div>
-  <p class="note">Kopiere den Text als Backup. Beim Import werden alle aktuellen Daten ersetzt.</p>
-</details>
+</section>
+<section class="blk">
+  <div><div class="cap">Daten</div><h2>Export und Import.</h2></div>
+  <div>
+    <textarea id="data" aria-label="Daten als JSON" spellcheck="false"></textarea>
+    <div class="set" style="margin-top:10px">
+      <button class="btn" id="copy">Daten kopieren</button>
+      <button class="btn ghost" id="imp">Aus Feld importieren</button>
+    </div>
+    <p class="note">Kopiere den Text als Backup. Beim Import werden alle aktuellen Daten ersetzt.</p>
+  </div>
+</section>
+</div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -173,9 +194,11 @@ details.more summary{font-size:.9rem}
 const SUPA_URL="https://pkaetsawprvkrryndtha.supabase.co",SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrYWV0c2F3cHJ2a3JyeW5kdGhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNjUwMDYsImV4cCI6MjEwNzY0MTAwNn0.PE4PaCBQtBYZZSFDP5lZM1NTXpBeyxDkVVUMDfYYN9A";
 const KEY="habits-v1",RKEY="habits-rem",DAYS=["Mo","Di","Mi","Do","Fr","Sa","So"];
 const CHECK='<svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg>',SLASH='<svg viewBox="0 0 16 16"><path d="M4 12L12 4"/></svg>';
-let habits=[],rem={on:false,time:"20:00",last:""},offset=0,filter="",sel=[0,1,2,3,4,5,6];
+let habits=[],rem={on:false,time:"20:00",last:""},offset=0,filter="",sel=[0,1,2,3,4,5,6],prof=null;
 
-try{rem=Object.assign(rem,JSON.parse(localStorage.getItem(RKEY))||{})}catch(e){}
+// A3: Erinnerung an/aus und Uhrzeit stehen jetzt im Profil (Datenbank). Im Browser bleibt nur "last" (heute schon erinnert).
+// oldRem = alte Einstellung aus dem Browser, wird einmalig ins Profil übernommen (siehe loadProf).
+let oldRem={};try{oldRem=JSON.parse(localStorage.getItem(RKEY))||{}}catch(e){}rem.last=oldRem.last||"";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -197,7 +220,7 @@ function optsHtml(p,t,dt,tm){
 }
 const daytimeOf=(dt,tm)=>{const v=dt==="zeit"?tm:dt;return DTRE.test(v||"")?v:""};
 
-const save=()=>{try{localStorage.setItem(RKEY,JSON.stringify(rem))}catch(e){}};
+const save=()=>{try{localStorage.setItem(RKEY,JSON.stringify({last:rem.last}))}catch(e){}};
 const sched=(h,d)=>h.days.includes(wdi(d))&&iso(d)>=h.created;
 
 function streak(h){
@@ -305,16 +328,52 @@ $("aopts").innerHTML=optsHtml("a",1,"","");
 $("prev").onclick=()=>{offset--;render()};
 $("next").onclick=()=>{if(offset<0){offset++;render()}};
 
-$("remOn").checked=rem.on;$("remTime").value=rem.time;
+// --- A3: Einstellungen und Profil ---
+const HM=/^([01]\d|2[0-3]):[0-5]\d$/;
+const REMTXT="Benachrichtigung, wenn heute noch Habits offen sind. Funktioniert nur, solange die Seite geöffnet ist.",NOPERM="Auf diesem Gerät sind Benachrichtigungen noch nicht erlaubt.";
+const updProf=o=>{if(!prof){$("err").textContent="Profil nicht geladen, Einstellung nicht gespeichert.";return}Object.assign(prof,o);db.from("profiles").update(o).eq("id",prof.id).then(chk)};
+const view=s=>{$("ov").hidden=s;$("st").hidden=!s;if(s)$("data").value=dump();window.scrollTo(0,0)};
+$("setb").onclick=()=>view(true);
+$("back").onclick=()=>view(false);
+// Erlaubnis gilt pro Gerät: Ist die Erinnerung an, aber hier nicht erlaubt, Hinweis und Knopf zeigen
+function permUi(){
+  const need=rem.on&&"Notification" in window&&Notification.permission!=="granted";
+  $("remPerm").hidden=!need;
+  if(need)$("remNote").textContent=NOPERM;else if($("remNote").textContent===NOPERM)$("remNote").textContent=REMTXT;
+}
+function profUi(){
+  $("pname").value=prof.name;
+  let tz=[];try{tz=Intl.supportedValuesOf("timeZone")}catch(e){}
+  if(!tz.includes(prof.timezone))tz.unshift(prof.timezone);
+  $("ptz").innerHTML=tz.map(z=>`<option${z===prof.timezone?" selected":""}>${esc(z)}</option>`).join("");
+  $("pplan").textContent=prof.plan==="free"?"Kostenlos":prof.plan;
+  rem.on=prof.rem_on;rem.time=prof.rem_time;$("remOn").checked=rem.on;$("remTime").value=rem.time;permUi();
+}
+async function loadProf(){
+  const r=await db.from("profiles").select("*").single();chk(r);if(!r.data)return;prof=r.data;
+  const up={};
+  if(!prof.timezone){try{up.timezone=Intl.DateTimeFormat().resolvedOptions().timeZone||""}catch(e){}if(!up.timezone)delete up.timezone}
+  if(oldRem.on&&!prof.rem_on&&HM.test(oldRem.time||"")){up.rem_on=true;up.rem_time=oldRem.time} // einmalig: alte Erinnerung aus dem Browser übernehmen
+  oldRem={};
+  if(Object.keys(up).length)updProf(up);
+  save();profUi();
+}
+$("pname").onchange=()=>updProf({name:$("pname").value.trim()});
+$("ptz").onchange=()=>updProf({timezone:$("ptz").value});
+async function askPerm(){
+  try{
+    if(!("Notification" in window))throw 0;
+    if(await Notification.requestPermission()!=="granted"){$("remNote").textContent="Benachrichtigungen sind blockiert. Erlaube sie in den Browser-Einstellungen.";return false}
+  }catch(e){$("remNote").textContent="Dein Browser unterstützt hier keine Benachrichtigungen.";return false}
+  $("remNote").textContent=REMTXT;return true;
+}
 $("remOn").onchange=async()=>{
   rem.on=$("remOn").checked;
-  if(rem.on){try{
-    if(!("Notification" in window))throw 0;
-    if(await Notification.requestPermission()!=="granted"){rem.on=false;$("remOn").checked=false;$("remNote").textContent="Benachrichtigungen sind blockiert. Erlaube sie in den Browser-Einstellungen."}
-  }catch(e){rem.on=false;$("remOn").checked=false;$("remNote").textContent="Dein Browser unterstützt hier keine Benachrichtigungen."}}
-  save();
+  if(rem.on&&!await askPerm()){rem.on=false;$("remOn").checked=false}
+  updProf({rem_on:rem.on});permUi();
 };
-$("remTime").onchange=()=>{rem.time=$("remTime").value;rem.last="";save()};
+$("remPerm").onclick=async()=>{await askPerm();permUi()};
+$("remTime").onchange=()=>{if(!HM.test($("remTime").value))return;rem.time=$("remTime").value;rem.last="";save();updProf({rem_time:rem.time})};
 setInterval(()=>{
   if(!rem.on)return;
   const n=new Date(),hm=String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0"),ti=iso(n);
@@ -323,8 +382,7 @@ setInterval(()=>{
   if(open.length){try{new Notification("MIND",{body:open.length+" noch offen: "+open.slice(0,3).map(h=>h.name).join(", ")})}catch(e){}}
 },30000);
 
-const dump=()=>JSON.stringify({habits,rem},null,1);
-$("io").addEventListener("toggle",()=>{$("data").value=dump()});
+const dump=()=>JSON.stringify({habits,rem:{on:rem.on,time:rem.time}},null,1);
 $("copy").onclick=async()=>{
   const t=$("data");t.value=dump();
   try{await navigator.clipboard.writeText(t.value)}catch(e){t.select();try{document.execCommand("copy")}catch(_){}}
@@ -335,9 +393,9 @@ $("imp").onclick=async()=>{
     const o=JSON.parse($("data").value);if(!Array.isArray(o.habits))throw 0;
     
     const rows=o.habits.map((h,k)=>{const n=norm({name:String(h.name||"Habit"),days:h.days,cat:String(h.cat||""),created:h.created,done:h.done,target:h.target,daytime:h.daytime});return{name:n.name,days:n.days,cat:n.cat,created:n.created,done:n.done,pos:k+1,target:n.target,daytime:n.daytime}});await db.from("habits").delete().not("id","is",null);const r=await db.from("habits").insert(rows).select();chk(r);habits=(r.data||[]).map(norm);
-    if(o.rem)rem=Object.assign(rem,o.rem);
-    $("remOn").checked=rem.on;$("remTime").value=rem.time;
-    save();render();$("imp").textContent="Importiert";setTimeout(()=>$("imp").textContent="Aus Feld importieren",1500);
+    if(o.rem&&HM.test(o.rem.time||"")){rem.on=!!o.rem.on;rem.time=o.rem.time;updProf({rem_on:rem.on,rem_time:rem.time})}
+    $("remOn").checked=rem.on;$("remTime").value=rem.time;permUi();
+    render();$("imp").textContent="Importiert";setTimeout(()=>$("imp").textContent="Aus Feld importieren",1500);
   }catch(e){$("imp").textContent="Format passt nicht";setTimeout(()=>$("imp").textContent="Aus Feld importieren",2000)}
 };
 
@@ -348,11 +406,11 @@ async function load(){const r=await db.from("habits").select("*").order("pos").o
 $("lf").onsubmit=async e=>{e.preventDefault();$("lerr").textContent="";
   const r=await db.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});
   if(r.error)$("lerr").textContent="Login fehlgeschlagen: "+r.error.message};
-$("out").onclick=async()=>{try{await db.auth.signOut({scope:"local"})}catch(e){}try{Object.keys(localStorage).filter(k=>k.startsWith("sb-")).forEach(k=>localStorage.removeItem(k))}catch(e){}habits=[];$("app").hidden=true;$("login").hidden=false;$("pw").value=""};
+$("out").onclick=async()=>{try{await db.auth.signOut({scope:"local"})}catch(e){}try{Object.keys(localStorage).filter(k=>k.startsWith("sb-")).forEach(k=>localStorage.removeItem(k))}catch(e){}habits=[];prof=null;rem.on=false;view(false);$("app").hidden=true;$("login").hidden=false;$("pw").value=""};
 db.auth.onAuthStateChange((ev,s)=>{
   $("login").hidden=!!s;$("app").hidden=!s;
-  if(s&&(ev==="INITIAL_SESSION"||ev==="SIGNED_IN"))setTimeout(load,0);
-  if(!s){habits=[];$("pw").value=""}
+  if(s&&(ev==="INITIAL_SESSION"||ev==="SIGNED_IN"))setTimeout(()=>{load();loadProf()},0);
+  if(!s){habits=[];prof=null;rem.on=false;$("pw").value=""}
 });
 </script>
 </body>
