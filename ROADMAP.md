@@ -1,6 +1,6 @@
 # MIND – Roadmap
 
-Stand: 15.10.2026. Reihenfolge: erst Funktionen, Oberfläche und Struktur (Phase A), dann für andere öffnen (Phase B).
+Stand: 06.11.2026. Reihenfolge: erst Funktionen, Oberfläche und Struktur (Phase A), dann für andere öffnen (Phase B).
 
 ## Grundregeln
 1. **Alles Zusätzliche ist optional.** Ein Habit besteht im Minimum nur aus einem Namen. Zeiten, Mehrfach-Ziele, Kategorie und Erinnerung sind ausgeklappte Zusatzoptionen und standardmäßig aus. Neue Datenbank-Felder bekommen immer einen Standardwert, der dem heutigen Verhalten entspricht.
@@ -18,9 +18,9 @@ Stand: 15.10.2026. Reihenfolge: erst Funktionen, Oberfläche und Struktur (Phase
 
 ## Phase A: Funktionen und Oberfläche (nur ich als Nutzer)
 - [x] **A1 Habits bearbeiten** (Name, Tage, Kategorie) und **verschieben** (Reihenfolge, neue Spalte `pos`)
-- [ ] **A2 Optionale Zusatzfelder anlegen:** Bereich „Mehr Optionen" im Formular
-  - [ ] Mehrfach-Habit mit Tagesziel (z. B. Wasser 6× am Tag), Standard 1× = wie bisher
-  - [ ] Tageszeit (Morgen, Mittag, Abend oder Uhrzeit), Standard keine
+- [x] **A2 Optionale Zusatzfelder anlegen:** Bereich „Mehr Optionen" im Formular
+  - [x] Mehrfach-Habit mit Tagesziel (z. B. Wasser 6× am Tag), Standard 1× = wie bisher
+  - [x] Tageszeit (Morgen, Mittag, Abend oder Uhrzeit), Standard keine
 - [ ] **A3 Profil und Einstellungen:** Tabelle `profiles` (Name, Zeitzone, `plan`), Seite „Einstellungen", Erinnerung wandert von localStorage in die Datenbank
 - [ ] **A4 Bessere Benachrichtigungen:** Prüfen, was geht (installierbare Web-App, Push, E-Mail). Entscheidung vorher.
 - [ ] **A5 Integrierte KI:** Schlüssel nur auf dem Server (Supabase-Funktion), Limit pro Nutzer, Kosten im Blick
