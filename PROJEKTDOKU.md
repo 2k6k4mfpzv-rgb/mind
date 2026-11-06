@@ -5,7 +5,7 @@ Stand: 06.11.2026. Dieses Dokument erklärt, was MIND ist, wie es aufgebaut ist 
 ## 1. Was ist MIND?
 Ein privater Habit Tracker für eine Person (Paul). Er läuft als Website in jedem Browser, mit Login und Datenbank, sodass alle Geräte dieselben Daten sehen. Das Design ist dunkel, minimal und weiß-akzentuiert. Die Texte sind deutsch.
 
-**Funktionen:** Habits anlegen, bearbeiten, verschieben und löschen, pro Habit Wochentage festlegen, optional Tagesziel (Mehrfach-Habits, z. B. 6× am Tag) und Tageszeit, Wochenraster mit 5 Zuständen (erledigt, verpasst, heute fällig, bevorstehend, nicht geplant), Fortschritt (Woche, Monat, 3 Monate), Erledigungsquote pro Wochentag (12 Wochen), Serien (Tage in Folge), Kategorien als Filter, Erinnerung per Browser-Benachrichtigung, Export und Import als JSON-Text.
+**Funktionen:** Habits anlegen, bearbeiten, verschieben und löschen, pro Habit Wochentage festlegen, optional Tagesziel (Mehrfach-Habits, z. B. 6× am Tag) und Tageszeit, Wochenraster mit 5 Zuständen (erledigt, verpasst, heute fällig, bevorstehend, nicht geplant), Fortschritt (Woche, Monat, 3 Monate), Erledigungsquote pro Wochentag (12 Wochen), Serien (Tage in Folge), Kategorien als Filter, Erinnerung per Browser-Benachrichtigung, Seite „Einstellungen“ (Name, Zeitzone, Tarif, Erinnerung, Export und Import als JSON-Text).
 
 ## 2. Architektur (drei Dienste)
 ```
@@ -26,7 +26,7 @@ Es gibt **keinen eigenen Server und keinen Build-Schritt**. Die ganze App ist ei
 public/index.html   Die komplette App (HTML, CSS, JavaScript in einer Datei)
 wrangler.jsonc      Sagt Cloudflare, dass ./public veröffentlicht wird
 docs/schema.sql     Datenbank-Struktur (einmal in Supabase ausgeführt)
-docs/JJJJ-MM-TT_*.sql  Spätere Datenbank-Änderungen, nach Datum nacheinander ausgeführt (aktuell: 2026-10-16_add-pos.sql, 2026-11-06_a2-zusatzfelder.sql)
+docs/JJJJ-MM-TT_*.sql  Spätere Datenbank-Änderungen, nach Datum nacheinander ausgeführt (aktuell: 2026-10-16_add-pos.sql, 2026-11-06_a2-zusatzfelder.sql, 2026-11-06_a3-profiles.sql)
 CLAUDE.md           Arbeitsregeln für Claude Code (wird in jeder Session automatisch gelesen)
 CHANGELOG.md        Protokoll aller Änderungen
 PROJEKTDOKU.md      Dieses Dokument
@@ -54,7 +54,20 @@ Eine Tabelle `public.habits`:
 | daytime | text | Tageszeit: leer (Standard), `morgen`, `mittag`, `abend` oder Uhrzeit `HH:MM`, nur Hinweis, seit 06.11.2026 |
 | created_at | timestamptz | Sortierung innerhalb gleicher Position |
 
-**Sicherheit:** Row Level Security ist aktiv. Die Regel `own habits` erlaubt Eingeloggten nur Zeilen mit eigener `user_id`. Deshalb darf der `anon`-Key im Code stehen. Die Registrierung neuer Nutzer ist in Supabase ausgeschaltet, nur Pauls Account existiert.
+Eine Tabelle `public.profiles` (seit 06.11.2026, eine Zeile pro Konto):
+| Spalte | Typ | Bedeutung |
+|---|---|---|
+| id | uuid | Gleich der Konto-ID (`auth.users`) |
+| name | text | Name, leer erlaubt (max. 40 Zeichen) |
+| timezone | text | Zeitzone, z. B. `Europe/Berlin`. Leer = die App trägt die Gerätezeitzone ein. Wird noch nicht zum Rechnen genutzt. |
+| plan | text | `free` (Standard) oder `premium`. Aus der App nicht änderbar. |
+| rem_on | boolean | Erinnerung an/aus (Standard aus) |
+| rem_time | text | Uhrzeit der Erinnerung `HH:MM` (Standard `20:00`) |
+| created_at | timestamptz | Anlegezeit |
+
+Das Profil legt ein Trigger (`on_auth_user_created`) beim Anlegen eines Kontos automatisch an. Die App darf das Profil nur lesen und `name`, `timezone`, `rem_on`, `rem_time` ändern (Rechte pro Spalte), damit sich niemand selbst auf Premium setzen kann.
+
+**Sicherheit:** Row Level Security ist aktiv. Die Regel `own habits` erlaubt Eingeloggten nur Zeilen mit eigener `user_id`, bei `profiles` nur die Zeile mit eigener `id`. Deshalb darf der `anon`-Key im Code stehen. Die Registrierung neuer Nutzer ist in Supabase ausgeschaltet, nur Pauls Account existiert.
 
 **Warum `done` als jsonb:** Eine Zeile pro Habit statt einer Zeile pro Tag hält den Code einfach. Nachteil: Bei sehr vielen Jahren Daten wird die Zelle größer. Für eine Person ist das unproblematisch.
 
@@ -65,7 +78,8 @@ Eine Tabelle `public.habits`:
 - **`render()`** baut die Oberfläche komplett neu (Raster, Fortschritt, Wochentags-Muster, Tagesauswahl).
 - **Speichern:** Jede Aktion schreibt direkt in die Datenbank (`insert`, `update` der Spalte `done`, `delete`). `chk()` zeigt Fehler oben an. Das Raster wird zuerst lokal aktualisiert, dann gespeichert.
 - **Login:** `onAuthStateChange` blendet Login-Seite oder App ein und lädt die Daten (`load()`).
-- **Lokal im Browser (localStorage):** Nur die Erinnerungs-Einstellung (`habits-rem`), weil sie gerätespezifisch ist.
+- **Einstellungen:** Eigene Ansicht (`#st`), die Übersicht liegt in `#ov`. `loadProf()` lädt das Profil, `updProf()` speichert eine Änderung sofort.
+- **Lokal im Browser (localStorage):** Nur `habits-rem` mit `last` (an welchem Tag dieses Gerät schon erinnert hat). Erinnerung an/aus und Uhrzeit stehen seit A3 im Profil. Eine ältere Einstellung im Browser wird beim ersten Laden einmalig ins Profil übernommen.
 - **Popups:** `confirm`/`alert` werden nicht benutzt (sie wurden in der Vorschau blockiert). Löschen läuft in zwei Klicks („Löschen", dann „Wirklich löschen?").
 
 ## 6. Änderungen einspielen

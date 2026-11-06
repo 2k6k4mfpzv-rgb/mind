@@ -88,6 +88,33 @@ details.more summary{font-size:.9rem}
 .opts .full{grid-column:1/-1}
 .c b{font-size:.8rem;font-weight:600;color:var(--ink)}
 @media (max-width:820px){.pb,section.blk{grid-template-columns:1fr}.right{border-left:0;border-top:1px solid var(--line)}.left,.right,.ph{padding-left:18px;padding-right:18px}.row{grid-template-columns:minmax(70px,1fr) repeat(7,28px);gap:4px}.c{width:26px;height:26px}.c svg{width:15px;height:15px}}
+/* A3: Einstellungen als Liste (Bezeichnung links, Feld rechts) */
+.sp{max-width:720px}
+.sg{padding:22px 28px 14px}
+.sg+.sg{border-top:1px solid var(--line)}
+.sg>.cap{margin-bottom:4px}
+.sr{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:58px;padding:10px 0}
+.sr+.sr{border-top:1px solid var(--line)}
+.sr>span:first-child{min-width:0}
+.sr small{display:block;color:var(--mute);font-size:.78rem;line-height:1.3}
+.sr input:not(.sw),.sr select{width:min(260px,58%);flex:none}
+.sr input[type=time]{width:auto}
+.sr input#pname{text-align:right}
+.sr select{appearance:none;-webkit-appearance:none;padding-right:34px;background-color:var(--panel);background-image:linear-gradient(45deg,transparent 50%,var(--mute) 50%),linear-gradient(135deg,var(--mute) 50%,transparent 50%);background-position:calc(100% - 19px) 52%,calc(100% - 14px) 52%;background-size:5px 5px;background-repeat:no-repeat;cursor:pointer}
+.sr input:disabled{opacity:.4}
+.sw{appearance:none;-webkit-appearance:none;flex:none;width:46px;height:28px;margin:0;padding:0;border-radius:99px;border:1px solid var(--line);background:var(--line);position:relative;cursor:pointer;transition:background .2s,border-color .2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--mute);transition:transform .2s,background .2s}
+.sw:checked{background:var(--hi);border-color:var(--hi)}
+.sw:checked::after{transform:translateX(18px);background:var(--on)}
+.badge{padding:3px 12px;border:1px solid var(--line);border-radius:99px;font-size:.8rem}
+.btn.sm{padding:8px 16px;font-size:.88rem;flex:none}
+.sg .note{margin:2px 0 8px}
+#remPerm{padding:0 0 8px;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.saved{margin-right:14px;opacity:0;transition:opacity .3s}.saved.on{opacity:1}
+details.restore{margin:0;padding:14px 0 6px;border-top:1px solid var(--line)}
+details.restore summary{font-size:.95rem}
+details.restore .note{margin:12px 0 10px}
+@media (max-width:820px){.sg{padding-left:18px;padding-right:18px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 #login{max-width:380px;margin:12vh auto;padding:0 20px}#login form{display:grid;gap:10px}#login h1{margin-bottom:28px}
 </style>
@@ -105,8 +132,9 @@ details.more summary{font-size:.9rem}
 <main id="app" hidden>
 <h1>MIND</h1>
 <p class="note" id="err" role="alert" style="color:var(--ink)"></p>
+<div id="ov">
 <div class="panel">
-  <div class="ph"><span class="cap">MIND / Übersicht</span><span class="cap"><span id="date"></span> · <button id="out" class="del">Abmelden</button></span></div>
+  <div class="ph"><span class="cap">MIND / Übersicht</span><span class="cap"><span id="date"></span> · <button id="setb" class="del">Einstellungen</button> · <button id="out" class="del">Abmelden</button></span></div>
   <div class="pb">
     <div class="left">
       <div class="nav">
@@ -150,21 +178,36 @@ details.more summary{font-size:.9rem}
     <button class="btn" type="submit">Hinzufügen</button>
   </form>
 </section>
+</div>
 
-<details id="io">
-  <summary>Erinnerung, Export und Import</summary>
-  <div class="set" style="margin:22px 0 6px">
-    <label class="set"><input type="checkbox" id="remOn"> Täglich um</label>
-    <input type="time" id="remTime" value="20:00">
+<!-- A3: Einstellungen (eigene Ansicht, Profil liegt in der Tabelle profiles) -->
+<div id="st" hidden>
+<div class="panel sp">
+  <div class="ph"><span class="cap">MIND / Einstellungen</span><span class="cap"><span id="saved" class="saved" aria-live="polite"></span><button id="back" class="del">‹ Übersicht</button></span></div>
+  <div class="sg">
+    <div class="cap">Profil</div>
+    <label class="sr"><span>Name</span><input id="pname" maxlength="40" placeholder="Optional" autocomplete="name"></label>
+    <label class="sr"><span>Zeitzone</span><select id="ptz"></select></label>
+    <div class="sr"><span>Tarif</span><span class="badge" id="pplan"></span></div>
   </div>
-  <p class="note" id="remNote" style="margin-top:0">Benachrichtigung, wenn heute noch Habits offen sind. Funktioniert nur, solange die Seite geöffnet ist.</p>
-  <textarea id="data" aria-label="Daten als JSON" spellcheck="false" style="margin-top:24px"></textarea>
-  <div class="set" style="margin-top:10px">
-    <button class="btn" id="copy">Daten kopieren</button>
-    <button class="btn ghost" id="imp">Aus Feld importieren</button>
+  <div class="sg">
+    <div class="cap">Erinnerung</div>
+    <label class="sr"><span>Tägliche Erinnerung<small>Wenn heute noch Habits offen sind</small></span><input type="checkbox" id="remOn" class="sw" role="switch"></label>
+    <label class="sr"><span>Uhrzeit</span><input type="time" id="remTime" value="20:00"></label>
+    <p class="note" id="remNote">Funktioniert nur, solange MIND im Browser geöffnet ist.</p>
+    <button class="del" id="remPerm" hidden>Benachrichtigungen auf diesem Gerät erlauben</button>
   </div>
-  <p class="note">Kopiere den Text als Backup. Beim Import werden alle aktuellen Daten ersetzt.</p>
-</details>
+  <div class="sg">
+    <div class="cap">Daten</div>
+    <div class="sr"><span>Backup<small>Alle Habits als Text in die Zwischenablage</small></span><button class="btn ghost sm" id="copy">Daten kopieren</button></div>
+    <details class="restore"><summary>Aus Backup wiederherstellen</summary>
+      <p class="note">Füge ein kopiertes Backup ein. Alle aktuellen Daten werden dabei ersetzt.</p>
+      <textarea id="data" aria-label="Backup als Text" spellcheck="false" placeholder="Backup hier einfügen"></textarea>
+      <button class="btn ghost sm" id="imp" style="margin-top:10px">Importieren</button>
+    </details>
+  </div>
+</div>
+</div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -173,9 +216,11 @@ details.more summary{font-size:.9rem}
 const SUPA_URL="https://pkaetsawprvkrryndtha.supabase.co",SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrYWV0c2F3cHJ2a3JyeW5kdGhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNjUwMDYsImV4cCI6MjEwNzY0MTAwNn0.PE4PaCBQtBYZZSFDP5lZM1NTXpBeyxDkVVUMDfYYN9A";
 const KEY="habits-v1",RKEY="habits-rem",DAYS=["Mo","Di","Mi","Do","Fr","Sa","So"];
 const CHECK='<svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg>',SLASH='<svg viewBox="0 0 16 16"><path d="M4 12L12 4"/></svg>';
-let habits=[],rem={on:false,time:"20:00",last:""},offset=0,filter="",sel=[0,1,2,3,4,5,6];
+let habits=[],rem={on:false,time:"20:00",last:""},offset=0,filter="",sel=[0,1,2,3,4,5,6],prof=null;
 
-try{rem=Object.assign(rem,JSON.parse(localStorage.getItem(RKEY))||{})}catch(e){}
+// A3: Erinnerung an/aus und Uhrzeit stehen jetzt im Profil (Datenbank). Im Browser bleibt nur "last" (heute schon erinnert).
+// oldRem = alte Einstellung aus dem Browser, wird einmalig ins Profil übernommen (siehe loadProf).
+let oldRem={};try{oldRem=JSON.parse(localStorage.getItem(RKEY))||{}}catch(e){}rem.last=oldRem.last||"";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -197,7 +242,7 @@ function optsHtml(p,t,dt,tm){
 }
 const daytimeOf=(dt,tm)=>{const v=dt==="zeit"?tm:dt;return DTRE.test(v||"")?v:""};
 
-const save=()=>{try{localStorage.setItem(RKEY,JSON.stringify(rem))}catch(e){}};
+const save=()=>{try{localStorage.setItem(RKEY,JSON.stringify({last:rem.last}))}catch(e){}};
 const sched=(h,d)=>h.days.includes(wdi(d))&&iso(d)>=h.created;
 
 function streak(h){
@@ -305,16 +350,54 @@ $("aopts").innerHTML=optsHtml("a",1,"","");
 $("prev").onclick=()=>{offset--;render()};
 $("next").onclick=()=>{if(offset<0){offset++;render()}};
 
-$("remOn").checked=rem.on;$("remTime").value=rem.time;
+// --- A3: Einstellungen und Profil ---
+const HM=/^([01]\d|2[0-3]):[0-5]\d$/;
+const REMTXT="Funktioniert nur, solange MIND im Browser geöffnet ist.",NOPERM="Auf diesem Gerät sind Benachrichtigungen noch nicht erlaubt.";
+let savedT;
+const flash=()=>{$("saved").textContent="Gespeichert";$("saved").classList.add("on");clearTimeout(savedT);savedT=setTimeout(()=>$("saved").classList.remove("on"),1500)};
+const updProf=(o,quiet)=>{if(!prof){$("err").textContent="Profil nicht geladen, Einstellung nicht gespeichert.";return}Object.assign(prof,o);db.from("profiles").update(o).eq("id",prof.id).then(r=>{chk(r);if(!r.error&&!quiet)flash()})};
+const view=s=>{$("ov").hidden=s;$("st").hidden=!s;window.scrollTo(0,0)};
+$("setb").onclick=()=>view(true);
+$("back").onclick=()=>view(false);
+// Erlaubnis gilt pro Gerät: Ist die Erinnerung an, aber hier nicht erlaubt, Hinweis und Knopf zeigen
+function permUi(){
+  const need=rem.on&&"Notification" in window&&Notification.permission!=="granted";
+  $("remPerm").hidden=!need;$("remTime").disabled=!rem.on;
+  if(need)$("remNote").textContent=NOPERM;else if($("remNote").textContent===NOPERM)$("remNote").textContent=REMTXT;
+}
+function profUi(){
+  $("pname").value=prof.name;
+  let tz=[];try{tz=Intl.supportedValuesOf("timeZone")}catch(e){}
+  if(!tz.includes(prof.timezone))tz.unshift(prof.timezone);
+  $("ptz").innerHTML=tz.map(z=>`<option${z===prof.timezone?" selected":""}>${esc(z)}</option>`).join("");
+  $("pplan").textContent=prof.plan==="free"?"Kostenlos":prof.plan;
+  rem.on=prof.rem_on;rem.time=prof.rem_time;$("remOn").checked=rem.on;$("remTime").value=rem.time;permUi();
+}
+async function loadProf(){
+  const r=await db.from("profiles").select("*").single();chk(r);if(!r.data)return;prof=r.data;
+  const up={};
+  if(!prof.timezone){try{up.timezone=Intl.DateTimeFormat().resolvedOptions().timeZone||""}catch(e){}if(!up.timezone)delete up.timezone}
+  if(oldRem.on&&!prof.rem_on&&HM.test(oldRem.time||"")){up.rem_on=true;up.rem_time=oldRem.time} // einmalig: alte Erinnerung aus dem Browser übernehmen
+  oldRem={};
+  if(Object.keys(up).length)updProf(up,true);
+  save();profUi();
+}
+$("pname").onchange=()=>updProf({name:$("pname").value.trim()});
+$("ptz").onchange=()=>updProf({timezone:$("ptz").value});
+async function askPerm(){
+  try{
+    if(!("Notification" in window))throw 0;
+    if(await Notification.requestPermission()!=="granted"){$("remNote").textContent="Benachrichtigungen sind blockiert. Erlaube sie in den Browser-Einstellungen.";return false}
+  }catch(e){$("remNote").textContent="Dein Browser unterstützt hier keine Benachrichtigungen.";return false}
+  $("remNote").textContent=REMTXT;return true;
+}
 $("remOn").onchange=async()=>{
   rem.on=$("remOn").checked;
-  if(rem.on){try{
-    if(!("Notification" in window))throw 0;
-    if(await Notification.requestPermission()!=="granted"){rem.on=false;$("remOn").checked=false;$("remNote").textContent="Benachrichtigungen sind blockiert. Erlaube sie in den Browser-Einstellungen."}
-  }catch(e){rem.on=false;$("remOn").checked=false;$("remNote").textContent="Dein Browser unterstützt hier keine Benachrichtigungen."}}
-  save();
+  if(rem.on&&!await askPerm()){rem.on=false;$("remOn").checked=false}
+  updProf({rem_on:rem.on});permUi();
 };
-$("remTime").onchange=()=>{rem.time=$("remTime").value;rem.last="";save()};
+$("remPerm").onclick=async()=>{await askPerm();permUi()};
+$("remTime").onchange=()=>{if(!HM.test($("remTime").value))return;rem.time=$("remTime").value;rem.last="";save();updProf({rem_time:rem.time})};
 setInterval(()=>{
   if(!rem.on)return;
   const n=new Date(),hm=String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0"),ti=iso(n);
@@ -323,11 +406,10 @@ setInterval(()=>{
   if(open.length){try{new Notification("MIND",{body:open.length+" noch offen: "+open.slice(0,3).map(h=>h.name).join(", ")})}catch(e){}}
 },30000);
 
-const dump=()=>JSON.stringify({habits,rem},null,1);
-$("io").addEventListener("toggle",()=>{$("data").value=dump()});
+const dump=()=>JSON.stringify({habits,rem:{on:rem.on,time:rem.time}},null,1);
 $("copy").onclick=async()=>{
-  const t=$("data");t.value=dump();
-  try{await navigator.clipboard.writeText(t.value)}catch(e){t.select();try{document.execCommand("copy")}catch(_){}}
+  const v=dump();
+  try{await navigator.clipboard.writeText(v)}catch(e){const t=$("data");t.closest("details").open=true;t.value=v;t.select();try{document.execCommand("copy")}catch(_){}}
   $("copy").textContent="Kopiert";setTimeout(()=>$("copy").textContent="Daten kopieren",1500);
 };
 $("imp").onclick=async()=>{
@@ -335,10 +417,10 @@ $("imp").onclick=async()=>{
     const o=JSON.parse($("data").value);if(!Array.isArray(o.habits))throw 0;
     
     const rows=o.habits.map((h,k)=>{const n=norm({name:String(h.name||"Habit"),days:h.days,cat:String(h.cat||""),created:h.created,done:h.done,target:h.target,daytime:h.daytime});return{name:n.name,days:n.days,cat:n.cat,created:n.created,done:n.done,pos:k+1,target:n.target,daytime:n.daytime}});await db.from("habits").delete().not("id","is",null);const r=await db.from("habits").insert(rows).select();chk(r);habits=(r.data||[]).map(norm);
-    if(o.rem)rem=Object.assign(rem,o.rem);
-    $("remOn").checked=rem.on;$("remTime").value=rem.time;
-    save();render();$("imp").textContent="Importiert";setTimeout(()=>$("imp").textContent="Aus Feld importieren",1500);
-  }catch(e){$("imp").textContent="Format passt nicht";setTimeout(()=>$("imp").textContent="Aus Feld importieren",2000)}
+    if(o.rem&&HM.test(o.rem.time||"")){rem.on=!!o.rem.on;rem.time=o.rem.time;updProf({rem_on:rem.on,rem_time:rem.time})}
+    $("remOn").checked=rem.on;$("remTime").value=rem.time;permUi();
+    render();$("imp").textContent="Importiert";setTimeout(()=>$("imp").textContent="Importieren",1500);
+  }catch(e){$("imp").textContent="Format passt nicht";setTimeout(()=>$("imp").textContent="Importieren",2000)}
 };
 
 // --- Datenbank und Login (Supabase) ---
@@ -348,11 +430,11 @@ async function load(){const r=await db.from("habits").select("*").order("pos").o
 $("lf").onsubmit=async e=>{e.preventDefault();$("lerr").textContent="";
   const r=await db.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});
   if(r.error)$("lerr").textContent="Login fehlgeschlagen: "+r.error.message};
-$("out").onclick=async()=>{try{await db.auth.signOut({scope:"local"})}catch(e){}try{Object.keys(localStorage).filter(k=>k.startsWith("sb-")).forEach(k=>localStorage.removeItem(k))}catch(e){}habits=[];$("app").hidden=true;$("login").hidden=false;$("pw").value=""};
+$("out").onclick=async()=>{try{await db.auth.signOut({scope:"local"})}catch(e){}try{Object.keys(localStorage).filter(k=>k.startsWith("sb-")).forEach(k=>localStorage.removeItem(k))}catch(e){}habits=[];prof=null;rem.on=false;view(false);$("app").hidden=true;$("login").hidden=false;$("pw").value=""};
 db.auth.onAuthStateChange((ev,s)=>{
   $("login").hidden=!!s;$("app").hidden=!s;
-  if(s&&(ev==="INITIAL_SESSION"||ev==="SIGNED_IN"))setTimeout(load,0);
-  if(!s){habits=[];$("pw").value=""}
+  if(s&&(ev==="INITIAL_SESSION"||ev==="SIGNED_IN"))setTimeout(()=>{load();loadProf()},0);
+  if(!s){habits=[];prof=null;rem.on=false;$("pw").value=""}
 });
 </script>
 </body>
