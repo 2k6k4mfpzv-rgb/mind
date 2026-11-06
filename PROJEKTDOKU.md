@@ -1,11 +1,11 @@
 # MIND – Projektdokumentation
 
-Stand: 16.10.2026. Dieses Dokument erklärt, was MIND ist, wie es aufgebaut ist und warum. Es ist so geschrieben, dass man (oder eine KI wie Claude) ohne Vorwissen weiterarbeiten kann.
+Stand: 06.11.2026. Dieses Dokument erklärt, was MIND ist, wie es aufgebaut ist und warum. Es ist so geschrieben, dass man (oder eine KI wie Claude) ohne Vorwissen weiterarbeiten kann.
 
 ## 1. Was ist MIND?
 Ein privater Habit Tracker für eine Person (Paul). Er läuft als Website in jedem Browser, mit Login und Datenbank, sodass alle Geräte dieselben Daten sehen. Das Design ist dunkel, minimal und weiß-akzentuiert. Die Texte sind deutsch.
 
-**Funktionen:** Habits anlegen, bearbeiten, verschieben und löschen, pro Habit Wochentage festlegen, Wochenraster mit 5 Zuständen (erledigt, verpasst, heute fällig, bevorstehend, nicht geplant), Fortschritt (Woche, Monat, 3 Monate), Erledigungsquote pro Wochentag (12 Wochen), Serien (Tage in Folge), Kategorien als Filter, Erinnerung per Browser-Benachrichtigung, Export und Import als JSON-Text.
+**Funktionen:** Habits anlegen, bearbeiten, verschieben und löschen, pro Habit Wochentage festlegen, optional Tagesziel (Mehrfach-Habits, z. B. 6× am Tag) und Tageszeit, Wochenraster mit 5 Zuständen (erledigt, verpasst, heute fällig, bevorstehend, nicht geplant), Fortschritt (Woche, Monat, 3 Monate), Erledigungsquote pro Wochentag (12 Wochen), Serien (Tage in Folge), Kategorien als Filter, Erinnerung per Browser-Benachrichtigung, Export und Import als JSON-Text.
 
 ## 2. Architektur (drei Dienste)
 ```
@@ -26,7 +26,8 @@ Es gibt **keinen eigenen Server und keinen Build-Schritt**. Die ganze App ist ei
 public/index.html   Die komplette App (HTML, CSS, JavaScript in einer Datei)
 wrangler.jsonc      Sagt Cloudflare, dass ./public veröffentlicht wird
 docs/schema.sql     Datenbank-Struktur (einmal in Supabase ausgeführt)
-docs/JJJJ-MM-TT_*.sql  Spätere Datenbank-Änderungen, nach Datum nacheinander ausgeführt (aktuell: 2026-10-16_add-pos.sql)
+docs/JJJJ-MM-TT_*.sql  Spätere Datenbank-Änderungen, nach Datum nacheinander ausgeführt (aktuell: 2026-10-16_add-pos.sql, 2026-11-06_a2-zusatzfelder.sql)
+CLAUDE.md           Arbeitsregeln für Claude Code (wird in jeder Session automatisch gelesen)
 CHANGELOG.md        Protokoll aller Änderungen
 PROJEKTDOKU.md      Dieses Dokument
 README.md           (Platzhalter von GitHub)
@@ -47,8 +48,10 @@ Eine Tabelle `public.habits`:
 | days | int[] | Geplante Wochentage, 0 = Montag bis 6 = Sonntag |
 | cat | text | Kategorie, leer erlaubt |
 | created | date | Ab diesem Tag zählt das Habit (davor nicht geplant) |
-| done | jsonb | Erledigte Tage, z. B. `{"2026-10-15":1}` |
+| done | jsonb | Erledigte Tage mit Anzahl, z. B. `{"2026-10-15":1}`; bei Mehrfach-Habits `{"2026-11-06":3}` |
 | pos | integer | Reihenfolge in der Liste (1, 2, 3 ...), Spalte seit 16.10.2026 |
+| target | integer | Tagesziel, wie oft am Tag (1–20, Standard 1 = einmal), seit 06.11.2026 |
+| daytime | text | Tageszeit: leer (Standard), `morgen`, `mittag`, `abend` oder Uhrzeit `HH:MM`, nur Hinweis, seit 06.11.2026 |
 | created_at | timestamptz | Sortierung innerhalb gleicher Position |
 
 **Sicherheit:** Row Level Security ist aktiv. Die Regel `own habits` erlaubt Eingeloggten nur Zeilen mit eigener `user_id`. Deshalb darf der `anon`-Key im Code stehen. Die Registrierung neuer Nutzer ist in Supabase ausgeschaltet, nur Pauls Account existiert.
@@ -58,7 +61,7 @@ Eine Tabelle `public.habits`:
 ## 5. Aufbau von `public/index.html`
 - **Konfiguration oben im Script:** `SUPA_URL` und `SUPA_KEY` (öffentlicher anon-Key).
 - **Supabase-Bibliothek:** per `<script>` von jsdelivr, fest auf Version `2.45.4` gepinnt, damit sich nichts unbemerkt ändert.
-- **Datenmodell im Browser:** Array `habits`. `norm()` setzt Standardwerte. `sched(h, tag)` sagt, ob ein Habit an einem Tag geplant ist. `streak()` zählt die Serie, `range()` zählt erledigt gegen geplant.
+- **Datenmodell im Browser:** Array `habits`. `norm()` setzt Standardwerte. `sched(h, tag)` sagt, ob ein Habit an einem Tag geplant ist. `cnt(h, tag)` gibt die Anzahl an einem Tag, `ok(h, tag)` sagt, ob das Tagesziel erreicht ist (nur das zählt als erledigt). `streak()` zählt die Serie, `range()` zählt erledigt gegen geplant.
 - **`render()`** baut die Oberfläche komplett neu (Raster, Fortschritt, Wochentags-Muster, Tagesauswahl).
 - **Speichern:** Jede Aktion schreibt direkt in die Datenbank (`insert`, `update` der Spalte `done`, `delete`). `chk()` zeigt Fehler oben an. Das Raster wird zuerst lokal aktualisiert, dann gespeichert.
 - **Login:** `onAuthStateChange` blendet Login-Seite oder App ein und lädt die Daten (`load()`).
