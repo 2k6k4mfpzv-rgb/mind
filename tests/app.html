@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MIND – Testversion</title>
+<style>html,body{margin:0;height:100%}iframe{display:block;width:100%;height:100%;border:0}</style>
+</head>
+<body>
+<iframe id="f" title="MIND mit Testdaten"></iframe>
+<script>
+// Die echte App mit nachgebauter Datenbank (tests/mock-supabase.js) und 9 erfundenen Habits.
+// Zum Ansehen und Ausprobieren, ohne die echte Datenbank zu berühren. Starten wie tests/logik.html.
+fetch("../public/index.html",{cache:"no-store"}).then(r=>r.text()).then(h=>{
+  document.getElementById("f").srcdoc=h.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase[^"]*"><\/script>/,'<script src="/tests/mock-supabase.js"><\/script>').replace('href="fonts/','href="/public/fonts/').replace("<head>",'<head><base href="/public/">');
+});
+</script>
+</body>
+</html>

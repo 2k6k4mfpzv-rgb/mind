@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MIND – Logik-Tests</title>
+<style>
+body{font:15px/1.5 system-ui,-apple-system,sans-serif;margin:24px auto;max-width:900px;padding:0 16px;color:#1B1A21;background:#FAF8F5}
+h1{font-size:1.5rem;margin:0 0 4px}h2{font-size:1rem;margin:20px 0 4px}
+#sum{font-weight:700}.ok{color:#2e7d32}.no{color:#c62828;font-weight:700}
+ol{margin:0;padding-left:22px}li{margin:2px 0}
+iframe{position:absolute;left:-9999px;width:390px;height:844px;border:0}
+</style>
+</head>
+<body>
+<h1>MIND – Logik-Tests</h1>
+<p>Lädt die echte App (<code>public/index.html</code>) mit nachgebauter Datenbank (<code>tests/mock-supabase.js</code>) und prüft die Rechen-Logik. Echte Daten werden nie berührt. <a href="app.html">App mit Testdaten ansehen</a></p>
+<p id="sum">Läuft …</p>
+<div id="out"></div>
+<iframe id="app" title="App im Test"></iframe>
+<script>
+// Starten: im Code-Ordner "python3 -m http.server 8000" ausführen und http://localhost:8000/tests/logik.html öffnen.
+// Jeder Test vergleicht ein Ergebnis mit dem erwarteten Wert. Grün = stimmt, Rot = Fehler.
+
+// Testuhr: Die App bekommt eine Uhr, die man vorstellen kann (window.__shift in Millisekunden).
+// Der Wert überlebt ein Neuladen der App, damit man "über Mitternacht" testen kann.
+const SHIM=`<script>(()=>{const D=Date;window.__shift=+(sessionStorage.getItem("mind-test-shift")||0);
+class T extends D{constructor(...a){a.length?super(...a):super(D.now()+window.__shift)}static now(){return D.now()+window.__shift}}window.Date=T})()<\/script>`;
+const fr=document.getElementById("app"),out=document.getElementById("out");
+let W,loads=0,pass=0,fail=0,list;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const E=s=>W.eval(s); // Code im Fenster der App ausführen (sieht alle Variablen der App)
+function group(t){const h=document.createElement("h2");h.textContent=t;list=document.createElement("ol");out.append(h,list)}
+function check(name,got,want){
+  const ok=JSON.stringify(got)===JSON.stringify(want);ok?pass++:fail++;
+  const li=document.createElement("li");li.className=ok?"ok":"no";
+  li.textContent=(ok?"✓ ":"✗ ")+name+(ok?"":` – erwartet ${JSON.stringify(want)}, bekommen ${JSON.stringify(got)}`);list.append(li);
+}
+function t(name,fn,want){let got;try{got=fn()}catch(e){got="Fehler: "+e.message}check(name,got,want)}
+async function ta(name,fn,want){let got;try{got=await fn()}catch(e){got="Fehler: "+e.message}check(name,got,want)}
+
+async function boot(){ // App mit nachgebauter Datenbank laden und warten, bis sie angemeldet und geladen ist
+  const html=await (await fetch("../public/index.html",{cache:"no-store"})).text();
+  const app=html.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase[^"]*"><\/script>/,'<script src="/tests/mock-supabase.js"><\/script>').replace('href="fonts/','href="/public/fonts/').replace("<head>",'<head><base href="/public/">'+SHIM);
+  if(!app.includes("/tests/mock-supabase.js"))throw new Error("Supabase-Zeile in index.html nicht gefunden");
+  loads=0;
+  await new Promise(r=>{fr.onload=()=>{loads++;W=fr.contentWindow;r()};fr.srcdoc=app});
+  await waitLoaded();
+}
+async function waitLoaded(){for(let i=0;i<50;i++){await sleep(50);try{if(E("habits.length"))return}catch(e){}}throw new Error("App lädt nicht")}
+const day=n=>E(`iso(addDays(today,${n}))`);           // Datum als Text, n Tage von heute
+const date=n=>E(`addDays(today,${n})`);               // Datum als Date
+const ALL=[0,1,2,3,4,5,6];
+function habit(o){ // Test-Habit wie aus der Datenbank, durch norm() der App geschickt
+  return E("norm")(JSON.parse(JSON.stringify(Object.assign({id:"t"+Math.random(),name:"Test",days:ALL,cat:"",done:{},target:1,daytime:"",color:"",icon:""},o))));
+}
+function fill(from,to,v=1,skip=[]){const o={};for(let i=from;i<=to;i++)if(!skip.includes(i))o[day(i)]=v;return o} // Haken von Tag from bis to
+
+async function run(){
+  sessionStorage.removeItem("mind-test-shift");
+  await boot();
+  const streak=E("streak"),ok=E("ok"),sched=E("sched"),M=-E("wdi(today)"); // M = Abstand zum Montag dieser Woche
+
+  group("Faire Serie (Puffertag pro Woche)");
+  t("Jeden Tag geschafft, auch heute",()=>streak(habit({created:day(-40),done:fill(-40,0)})),41);
+  t("Heute noch offen zählt nicht als Fehltag",()=>streak(habit({created:day(-40),done:fill(-40,-1)})),40);
+  t("Ein Fehltag ist ein Puffertag, die Serie läuft weiter",()=>streak(habit({created:day(-40),done:fill(-40,0,1,[-1])})),40);
+  t("Zweiter Fehltag in derselben Woche beendet die Serie",()=>streak(habit({created:day(-40),done:fill(-40,0,1,[M-7,M-6])})),6-M);
+  t("Fehltage in verschiedenen Wochen: jeder ist ein Puffertag",()=>streak(habit({created:day(-40),done:fill(-40,0,1,[M-5,M-12,M-19])})),38);
+  t("Nicht geplante Tage zählen nicht mit",()=>{const h=habit({created:day(-40),days:[0,2,5],done:fill(-40,0)});return streak(h)},
+    (()=>{let n=0;for(let i=-40;i<=0;i++)if([0,2,5].includes(E(`wdi(addDays(today,${i}))`)))n++;return n})());
+
+  group("Fehler 1: Frühere Einstellungen (Tagesziel und Tage) gelten für alte Tage");
+  const old=[{until:day(-5),days:ALL,target:1}];
+  t("Alter Haken (1×) zählt voll, wenn damals das Ziel 1× war",()=>ok(habit({target:4,created:day(-20),settings_log:old,done:{[day(-10)]:1}}),day(-10)),true);
+  t("Nach der Zieländerung ist 1 von 4 nur teilweise",()=>ok(habit({target:4,created:day(-20),settings_log:old,done:{[day(-2)]:1}}),day(-2)),false);
+  t("Tage, die damals nicht geplant waren, zählen nicht als verpasst",()=>{
+    const w=E(`wdi(addDays(today,-10))`),h=habit({created:day(-20),settings_log:[{until:day(-7),days:[w],target:1}]});
+    return [sched(h,date(-10)),sched(h,date(-11)),sched(h,date(-3))]},[true,false,true]);
+  t("Im Verlauf ist der alte Haken ein voller Punkt, der neue ein Viertel",()=>{
+    const m=E("mosaic")(habit({target:4,created:day(-20),settings_log:old,done:{[day(-10)]:1,[day(-2)]:1}}));
+    return [(m.match(/class="f"/g)||[]).length,(m.match(/--f:0\.25/g)||[]).length]},[1,1]);
+  t("Ohne frühere Einstellungen bleibt alles wie bisher",()=>{const h=habit({target:2,created:day(-20),done:{[day(-10)]:1,[day(-9)]:2}});return [ok(h,day(-10)),ok(h,day(-9))]},[false,true]);
+  // Bearbeiten wie in der App: Ziel von Wasser (Testdaten: 6×) ändern
+  const edit=(i,c)=>E(`(()=>{const h=habits[${i}];ed={i:${i},name:h.name,days:h.days.slice(),cat:h.cat,col:colKey(h),ico:h.icon,tg:h.target,dt:"",tm:"",more:true};Object.assign(ed,${JSON.stringify(c)});saveEdit();return habits[${i}].settings_log})()`);
+  const wasser=E("habits[0].target"),full=E("Object.keys(habits[0].done).find(k=>k<TI&&habits[0].done[k]===habits[0].target)");
+  t("Ziel ändern merkt sich das alte Ziel (gilt bis gestern)",()=>edit(0,{tg:wasser+2}),[{until:E("TI"),days:E("habits[0].days"),target:wasser}]);
+  t("Haken von vor der Änderung bleiben geschafft",()=>ok(E("habits[0]"),full),true);
+  t("Heute gilt schon das neue Ziel",()=>E("habits[0].target"),wasser+2);
+  t("Zweite Änderung am selben Tag behält das ursprüngliche alte Ziel",()=>edit(0,{tg:3}),[{until:E("TI"),days:E("habits[0].days"),target:wasser}]);
+  t("Nur den Namen ändern merkt sich nichts",()=>edit(1,{name:"Meditation"}),[]);
+  await ta("Gespeichert wird es auch in der Datenbank",async()=>{await sleep(200);return E(`MOCK.habits.find(h=>h.id===habits[0].id).settings_log.length`)},1);
+
+  group("Weniger Zahlen, Rückgängig, Orientierung");
+  const konst=E("konst");
+  t("Konstanz: letzte 30 Tage, heute zählt erst, wenn geschafft",()=>[konst([habit({created:day(-40),done:fill(-15,-1)})]),konst([habit({created:day(-40),done:fill(-15,0)})])],[52,53]);
+  t("Konstanz ohne geplante Tage zeigt nichts statt 0 %",()=>konst([habit({created:day(0),days:[(E("wdi(today)")+1)%7]})]),null);
+  t("Heute und Verlauf rechnen die Konstanz gleich",()=>E(`$("kq").textContent===konst(habits)+" %"`),true);
+  t("Keine „beste Woche“ und kein „12 Wochen“ mehr auf den Karten",()=>E(`/beste Woche|12 Wochen/.test($("grid").textContent)`),false);
+  t("Heute ist im Mosaik markiert, genau ein Punkt pro Karte",()=>E(`[...document.querySelectorAll("#grid .mo")].every(m=>m.querySelectorAll("i.t").length===1)`),true);
+  await ta("Rückgängig: Mehrfach-Habit auf 0 gesetzt, der Knopf holt es zurück",async()=>{
+    const i=E("habits.findIndex(h=>h.target>1&&sched(h,today))");
+    E(`habits[${i}].done[TI]=habits[${i}].target;render();document.querySelector('#tiles [data-t="${i}"]').click()`);
+    const shown=E(`cnt(habits[${i}],TI)===0&&$("undo").textContent.includes("Rückgängig")`);
+    E(`$("undo").querySelector("button").click()`);await sleep(200);
+    return [shown,E(`cnt(habits[${i}],TI)===habits[${i}].target`),E(`+MOCK.habits.find(h=>h.id===habits[${i}].id).done[TI]===habits[${i}].target`),E(`$("undo").textContent`)]},[true,true,true,""]);
+  t("Bei Ziel 1 erscheint kein Rückgängig (ein Tipp holt den Haken zurück)",()=>{
+    const i=E("habits.findIndex(h=>h.target===1&&sched(h,today))");
+    E(`habits[${i}].done[TI]=1;render();document.querySelector('#tiles [data-t="${i}"]').click()`);
+    return [E(`cnt(habits[${i}],TI)`),E(`$("undo").textContent`)]},[0,""]);
+
+  group("Fehler 2: Die App bleibt aktuell, auch wenn sie lange offen ist");
+  // "Zurück zur App": Die Seite meldet sich als sichtbar (auch wenn das Testfenster im Hintergrund ist)
+  const back=()=>{Object.defineProperty(W.document,"hidden",{get:()=>false,configurable:true});W.document.dispatchEvent(new W.Event("visibilitychange"))};
+  await ta("Zurück zur App: Änderungen von einem anderen Gerät werden geladen",async()=>{
+    const id=E("habits[2].id");E(`MOCK.habits.find(h=>h.id==="${id}").name="Vom Handy geändert"`);
+    back();await sleep(400);
+    return E(`habits.find(h=>h.id==="${id}").name`)},"Vom Handy geändert");
+  await ta("Ein Haken, der während des Neuladens gesetzt wird, geht nicht verloren",async()=>{
+    const i=E(`+document.querySelector("#tiles .tile[data-t]").dataset.t`),want=E(`(()=>{const h=habits[${i}],n=cnt(h,TI);return n>=h.target?0:n+1})()`);
+    back();E(`document.querySelector('#tiles .tile[data-t="${i}"]').click()`);await sleep(400);
+    return E(`cnt(habits[${i}],TI)`)===want&&E(`+(MOCK.habits.find(h=>h.id===habits[${i}].id).done[TI]||0)`)===want},true);
+  const tomorrow=day(1);
+  await ta("Neuer Tag, aber gerade wird bearbeitet: nicht neu laden",async()=>{
+    E(`ed={i:0,name:"x",days:[0],cat:"",col:"himmel",ico:"",tg:1,dt:"",tm:"",more:false};render()`);
+    sessionStorage.setItem("mind-test-shift",String(864e5));W.__shift=864e5; // Uhr einen Tag vor
+    back();await sleep(400);return loads},1);
+  await ta("Neuer Tag: App lädt neu und zeigt den neuen Tag",async()=>{
+    E("ed=null;render()");back();
+    for(let i=0;i<60&&loads<2;i++)await sleep(50);await waitLoaded();return [loads,E("TI")]},[2,tomorrow]);
+  sessionStorage.removeItem("mind-test-shift");
+
+  document.getElementById("sum").textContent=fail?`${fail} von ${pass+fail} Tests fehlgeschlagen`:`Alle ${pass} Tests bestanden`;
+  document.getElementById("sum").className=fail?"no":"ok";
+  document.title=(fail?"✗ ":"✓ ")+"MIND – Logik-Tests";
+}
+run().catch(e=>{document.getElementById("sum").textContent="Abbruch: "+e.message;document.getElementById("sum").className="no"});
+</script>
+</body>
+</html>
