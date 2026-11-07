@@ -26,8 +26,8 @@ Stand: 07.11.2026. Reihenfolge: erst Funktionen, Oberfläche und Struktur (Phase
 - [ ] **A5 Integrierte KI:** Schlüssel nur auf dem Server (Supabase-Funktion), Limit pro Nutzer, Kosten im Blick
 - [ ] **A6 Mehr Statistiken:** Verlauf, Vergleiche, Serien-Rekorde (später teilweise Premium)
 - [ ] **A7 Oberfläche: Redesign „Puls“** (kommt **vor A4**, entschieden 07.11.2026, damit A4 und A5 gleich im neuen Design entstehen): Handy-Ansicht, Bedienung, Texte
-  - [ ] Schritt 1: Puls-Farben und Schrift, Startseite „Heute“ mit Kacheln und Tagesring, Tab-Leiste (Heute, Verlauf, Ich), Farbe pro Habit (Spalte `color`)
-  - [ ] Spätere Schritte (noch offen): faire Serie mit Puffertag, Symbole pro Habit, Kachel lange drücken (Menü), Sammlung als Belohnung
+  - [ ] Schritt 1: Puls-Farben und Schrift, Startseite „Heute“ mit Kacheln und Tagesring, Tab-Leiste (Heute, Verlauf, Ich), Verlauf mit 12-Wochen-Mosaik pro Habit, Farbe und Symbol pro Habit (Spalten `color`, `icon`), faire Serie mit Puffertag
+  - [ ] Spätere Schritte (noch offen): Kachel lange drücken (Menü), Sammlung als Belohnung
 
 ## Phase B: Öffnen für andere (Launch)
 - [ ] **B1 Kontaktformular** (Tabelle für Nachrichten, nur Schreiben erlaubt, Spam-Schutz)

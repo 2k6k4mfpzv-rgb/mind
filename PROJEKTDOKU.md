@@ -5,7 +5,9 @@ Stand: 07.11.2026. Dieses Dokument erklärt, was MIND ist, wie es aufgebaut ist 
 ## 1. Was ist MIND?
 Ein privater Habit Tracker für eine Person (Paul). Er läuft als Website in jedem Browser, mit Login und Datenbank, sodass alle Geräte dieselben Daten sehen. Das Design heißt „Puls“ (seit 07.11.2026): farbige Kacheln, die sich füllen, Schrift Plus Jakarta Sans, hell und dunkel nach Geräte-Einstellung, kein Rot und kein X für verpasste Tage. Die Texte sind deutsch.
 
-**Funktionen:** Tab-Leiste mit Heute, Verlauf und Ich. **Heute:** die heute geplanten Habits als Kacheln (Antippen füllt sie, Mehrfach-Habits anteilig), Tagesring, Filter nach Tageszeit, Konstanz der letzten 30 Tage, neues Habit anlegen. **Verlauf:** Wochenraster zum Nachtragen mit 5 Zuständen (erledigt, ohne Haken, heute dran, kommt noch, nicht geplant), Habits bearbeiten, verschieben und löschen, Fortschritt (Woche, Monat, 3 Monate), Erledigungsquote pro Wochentag (12 Wochen), Serien (Tage in Folge), Kategorien als Filter. **Ich:** Name, Zeitzone, Tarif, Erinnerung per Browser-Benachrichtigung, Export und Import als JSON-Text, Abmelden. Pro Habit: Wochentage, Farbe, optional Tagesziel (Mehrfach-Habits, z. B. 6× am Tag), Tageszeit und Kategorie.
+**Funktionen:** Tab-Leiste mit Heute, Verlauf und Ich. **Heute:** die heute geplanten Habits als Kacheln mit Symbol (Antippen füllt sie, Mehrfach-Habits anteilig), Tagesring, Filter nach Tageszeit, Konstanz der letzten 30 Tage, faire Serie mit Puffertag, neues Habit anlegen. **Verlauf:** pro Habit eine Karte mit Mosaik der letzten 12 Wochen, „× insgesamt“ und „beste Woche“. Aufgeklappt: Woche zum Nachtragen mit 5 Zuständen (erledigt, ohne Haken, heute dran, kommt noch, nicht geplant), Serie, Habit bearbeiten, verschieben und löschen. Dazu Fortschritt (Woche, Monat, 3 Monate), Erledigungsquote pro Wochentag (12 Wochen), Kategorien als Filter. **Ich:** Name, Zeitzone, Tarif, Erinnerung per Browser-Benachrichtigung, Export und Import als JSON-Text, Abmelden. Pro Habit: Wochentage, Farbe, Symbol, optional Tagesziel (Mehrfach-Habits, z. B. 6× am Tag), Tageszeit und Kategorie.
+
+**Faire Serie (seit 07.11.2026):** Ein Tag zählt, wenn mindestens ein Habit geschafft ist (bei der Serie pro Habit: wenn dieses Habit geschafft ist). Ein Fehltag pro Woche (Mo bis So) ist ein Puffertag, die Serie pausiert dann nur. Erst ein zweiter Fehltag in derselben Woche beendet sie. Heute zählt erst, wenn geschafft.
 
 ## 2. Architektur (drei Dienste)
 ```
@@ -27,7 +29,7 @@ public/index.html   Die komplette App (HTML, CSS, JavaScript in einer Datei)
 public/fonts/       Schrift Plus Jakarta Sans (plus-jakarta-sans.woff2) und ihre Lizenz (ofl.txt). Selbst gehostet, nicht von Google (DSGVO).
 wrangler.jsonc      Sagt Cloudflare, dass ./public veröffentlicht wird
 docs/schema.sql     Datenbank-Struktur (einmal in Supabase ausgeführt)
-docs/JJJJ-MM-TT_*.sql  Spätere Datenbank-Änderungen, nach Datum nacheinander ausgeführt (aktuell: 2026-10-16_add-pos.sql, 2026-11-06_a2-zusatzfelder.sql, 2026-11-06_a3-profiles.sql, 2026-11-07_puls-farbe.sql)
+docs/JJJJ-MM-TT_*.sql  Spätere Datenbank-Änderungen, nach Datum nacheinander ausgeführt (aktuell: 2026-10-16_add-pos.sql, 2026-11-06_a2-zusatzfelder.sql, 2026-11-06_a3-profiles.sql, 2026-11-07_puls-farbe-symbol.sql)
 CLAUDE.md           Arbeitsregeln für Claude Code (wird in jeder Session automatisch gelesen)
 CHANGELOG.md        Protokoll aller Änderungen
 PROJEKTDOKU.md      Dieses Dokument
@@ -54,6 +56,7 @@ Eine Tabelle `public.habits`:
 | target | integer | Tagesziel, wie oft am Tag (1–20, Standard 1 = einmal), seit 06.11.2026 |
 | daytime | text | Tageszeit: leer (Standard), `morgen`, `mittag`, `abend` oder Uhrzeit `HH:MM`, für den Filter auf „Heute“, seit 06.11.2026 |
 | color | text | Farbe der Kachel: leer (Standard = automatisch aus der ID) oder `himmel`, `salbei`, `lavendel`, `apricot`, `sonne`, `rose`, `petrol`, `koralle`. Seit 07.11.2026 |
+| icon | text | Symbol: leer (Standard = Anfangsbuchstabe des Namens) oder `tropfen`, `blatt`, `buch`, `hantel`, `puls`, `sonne`, `mond`, `stift`, `herz`, `apfel`, `pille`, `note`, `sprache`, `hut`, `haus`, `handy`. Seit 07.11.2026 |
 | created_at | timestamptz | Sortierung innerhalb gleicher Position |
 
 Eine Tabelle `public.profiles` (seit 06.11.2026, eine Zeile pro Konto):
@@ -76,13 +79,13 @@ Das Profil legt ein Trigger (`on_auth_user_created`) beim Anlegen eines Kontos a
 ## 5. Aufbau von `public/index.html`
 - **Konfiguration oben im Script:** `SUPA_URL` und `SUPA_KEY` (öffentlicher anon-Key).
 - **Supabase-Bibliothek:** per `<script>` von jsdelivr, fest auf Version `2.45.4` gepinnt, damit sich nichts unbemerkt ändert.
-- **Datenmodell im Browser:** Array `habits`. `norm()` setzt Standardwerte. `sched(h, tag)` sagt, ob ein Habit an einem Tag geplant ist. `cnt(h, tag)` gibt die Anzahl an einem Tag, `ok(h, tag)` sagt, ob das Tagesziel erreicht ist (nur das zählt als erledigt). `streak()` zählt die Serie, `range()` zählt erledigt gegen geplant.
-- **Farben (Puls):** CSS-Variablen oben im `<style>` (hell und dunkel). Die 8 Habit-Farben stehen in `COLS`. `colKey(h)` gibt die Farbe eines Habits, bei leerem `color` eine feste aus der ID, `hexOf(h)` den Farbwert.
+- **Datenmodell im Browser:** Array `habits`. `norm()` setzt Standardwerte. `sched(h, tag)` sagt, ob ein Habit an einem Tag geplant ist. `cnt(h, tag)` gibt die Anzahl an einem Tag, `ok(h, tag)` sagt, ob das Tagesziel erreicht ist (nur das zählt als erledigt). `fair()` zählt eine faire Serie (mit Puffertag), `streak(h)` nutzt sie pro Habit. `range()` zählt erledigt gegen geplant.
+- **Farben und Symbole (Puls):** CSS-Variablen oben im `<style>` (hell und dunkel). Die 8 Habit-Farben stehen in `COLS`, die 16 Symbole (Linien-Icons als SVG) in `ICONS`. `colKey(h)` gibt die Farbe eines Habits, bei leerem `color` eine feste aus der ID, `hexOf(h)` den Farbwert. `icoOf(h)` gibt das Symbol oder den Anfangsbuchstaben.
 - **Ansichten:** Drei Bereiche `#v-heute`, `#v-verlauf`, `#v-ich`, umgeschaltet mit `tab()` über die Tab-Leiste `#tabs`. Später kommt der MIND-Knopf (A5) als eigener Knopf in die Mitte der Leiste.
-- **`render()`** baut die Oberfläche neu (Raster, Fortschritt, Wochentags-Muster, Tagesauswahl, Kacheln, Tagesring). `renderHeute()` baut die Kacheln, `ring()` den Tagesring und die Konstanz-Karte. Nach dem Antippen einer Kachel wird nur diese Kachel geändert (`render(true)`), damit sie sich animiert füllt.
+- **`render()`** baut die Oberfläche neu (Verlauf-Karten, Fortschritt, Wochentags-Muster, Tagesauswahl, Kacheln, Tagesring). `renderHeute()` baut die Kacheln, `ring()` den Tagesring, die Konstanz-Karte und die Serie. Im Verlauf baut `card()` eine Karte mit `mosaic()` und `stats()`, aufgeklappt (`openId`) kommt `weekHtml()` dazu, beim Bearbeiten `editHtml()`. Nach dem Antippen einer Kachel wird nur diese Kachel geändert (`render(true)`), damit sie sich animiert füllt.
 - **Kacheln:** Die Füllung wächst über die CSS-Variable `--p` (0 bis 1). Der Inhalt liegt zweimal übereinander, normal und dunkel auf der Füllung, beide passend abgeschnitten. So bleibt die Schrift auf jeder Farbe lesbar.
 - **Neues Habit:** Formular in einem `<dialog>` (`#sheet`), am Handy als Blatt von unten.
-- **Speichern:** Jede Aktion schreibt direkt in die Datenbank (`insert`, `update` der Spalte `done`, `delete`). `chk()` zeigt Fehler oben an. Kacheln und Raster werden zuerst lokal aktualisiert, dann gespeichert.
+- **Speichern:** Jede Aktion schreibt direkt in die Datenbank (`insert`, `update` der Spalte `done`, `delete`). `chk()` zeigt Fehler oben an. Kacheln und Verlauf werden zuerst lokal aktualisiert, dann gespeichert.
 - **Login:** `onAuthStateChange` blendet Login-Seite oder App ein und lädt die Daten (`load()`).
 - **Einstellungen:** im Bereich „Ich“. `loadProf()` lädt das Profil, `updProf()` speichert eine Änderung sofort.
 - **Lokal im Browser (localStorage):** Nur `habits-rem` mit `last` (an welchem Tag dieses Gerät schon erinnert hat). Erinnerung an/aus und Uhrzeit stehen seit A3 im Profil. Eine ältere Einstellung im Browser wird beim ersten Laden einmalig ins Profil übernommen.
