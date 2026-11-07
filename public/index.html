@@ -527,6 +527,7 @@ let pend=-1,ed=null,openId=null;
 $("tiles").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;
   if(b.dataset.new){openSheet();return}
+  gen++;
   const h=habits[+b.dataset.t],n=cnt(h,TI);pend=-1;
   n>=h.target?delete h.done[TI]:h.done[TI]=n+1;
   b.style.setProperty("--p",tileP(h));b.setAttribute("aria-pressed",tileP(h)>=1);b.setAttribute("aria-label",tileLab(h));
@@ -535,7 +536,7 @@ $("tiles").addEventListener("click",e=>{
   db.from("habits").update({done:h.done}).eq("id",h.id).then(chk);
 });
 $("grid").addEventListener("click",e=>{
-  const b=e.target.closest("button");if(!b)return;
+  const b=e.target.closest("button");if(!b)return;gen++;
   if(b.dataset.open!==undefined){const h=habits[+b.dataset.open];openId=openId===h.id?null:h.id;ed=null;pend=-1;offset=0;render();return}
   if(b.dataset.wk){const v=offset+ +b.dataset.wk;if(v<=0){offset=v;render()}return}
   if(b.dataset.up!==undefined||b.dataset.down!==undefined){move(+(b.dataset.up??b.dataset.down),b.dataset.up!==undefined?-1:1);return}
@@ -554,7 +555,7 @@ $("grid").addEventListener("toggle",e=>{if(ed&&e.target.classList.contains("more
 document.addEventListener("change",e=>{const t=e.target.dataset&&e.target.dataset.tm;if(t)$(t).hidden=e.target.value!=="zeit"});
 $("grid").addEventListener("keydown",e=>{if(!ed||!["en","ec","etg"].includes(e.target.id))return;if(e.key==="Enter"){e.preventDefault();saveEdit()}if(e.key==="Escape"){ed=null;render()}});
 function saveEdit(){
-  const name=ed.name.trim();
+  gen++;const name=ed.name.trim();
   if(!name){$("err").textContent="Der Name darf nicht leer sein.";return}
   if(!ed.days.length){$("err").textContent="Wähle mindestens einen Tag.";return}
   const h=habits[ed.i],upd={name,days:ed.days.slice().sort(),cat:ed.cat.trim(),color:ed.col,icon:ed.ico,target:clampT(ed.tg),daytime:daytimeOf(ed.dt,ed.tm)};
@@ -585,7 +586,7 @@ $("aico").onclick=e=>{const b=e.target.closest("button");if(b){aico=b.dataset.ai
 $("shx").onclick=()=>$("sheet").close();
 $("sheet").addEventListener("click",e=>{if(e.target===e.currentTarget)e.currentTarget.close()}); // neben das Blatt tippen schließt es
 $("form").addEventListener("submit",e=>{
-  e.preventDefault();const v=$("inp").value.trim();if(!v){$("inp").focus();return}
+  e.preventDefault();const v=$("inp").value.trim();if(!v){$("inp").focus();return}gen++;
   if(!sel.length)sel=[0,1,2,3,4,5,6];
   const row={name:v,days:sel.slice().sort(),cat:$("cat").value.trim(),color:acol,icon:aico,created:TI,done:{},pos:habits.reduce((m,h)=>Math.max(m,h.pos||0),0)+1,target:clampT($("atg").value),daytime:daytimeOf($("adt").value,$("atm").value)};db.from("habits").insert(row).select().single().then(r=>{chk(r);if(r.data){habits.push(norm(r.data));render()}});
   $("inp").value="";$("aopts").innerHTML=optsHtml("a",1,"","");$("sheet").close();
@@ -657,7 +658,7 @@ $("copy").onclick=async()=>{
   $("copy").textContent="Kopiert";setTimeout(()=>$("copy").textContent="Daten kopieren",1500);
 };
 $("imp").onclick=async()=>{
-  try{
+  gen++;try{
     const o=JSON.parse($("data").value);if(!Array.isArray(o.habits))throw 0;
 
     const rows=o.habits.map((h,k)=>{const n=norm({name:String(h.name||"Habit"),days:h.days,cat:String(h.cat||""),created:h.created,done:h.done,target:h.target,daytime:h.daytime,color:h.color,icon:h.icon,settings_log:h.settings_log});return{name:n.name,days:n.days,cat:n.cat,created:n.created,done:n.done,pos:k+1,target:n.target,daytime:n.daytime,color:n.color,icon:n.icon,settings_log:n.settings_log}});await db.from("habits").delete().not("id","is",null);const r=await db.from("habits").insert(rows).select();chk(r);habits=(r.data||[]).map(norm);
@@ -670,7 +671,19 @@ $("imp").onclick=async()=>{
 // --- Datenbank und Login (Supabase) ---
 const db=supabase.createClient(SUPA_URL,SUPA_KEY);
 const chk=r=>{$("err").textContent=r&&r.error?"Speichern fehlgeschlagen: "+r.error.message:""};
-async function load(){const r=await db.from("habits").select("*").order("pos").order("created_at");chk(r);habits=(r.data||[]).map(norm);render()}
+let gen=0; // zählt eigene Änderungen, damit ein Neuladen, das schon unterwegs ist, sie nicht wieder überschreibt
+async function load(){const g=gen,r=await db.from("habits").select("*").order("pos").order("created_at");if(g!==gen)return;chk(r);habits=(r.data||[]).map(norm);render()}
+// Bleibt MIND lange offen (z. B. im Handy-Browser), beim Zurückkommen die Daten neu holen, damit Haken von anderen
+// Geräten nicht überschrieben werden. Ist inzwischen ein neuer Tag, die Seite ganz neu laden, damit "heute" stimmt.
+// Nie mitten beim Bearbeiten oder Anlegen.
+function refresh(){
+  if(document.hidden||$("app").hidden||ed||$("sheet").open)return;
+  if(iso(new Date())!==TI){location.reload();return}
+  load();loadProf();
+}
+document.addEventListener("visibilitychange",refresh);
+addEventListener("pageshow",e=>{if(e.persisted)refresh()}); // Seite aus dem Zurück-Speicher des Browsers
+setInterval(()=>{if(iso(new Date())!==TI)refresh()},60000); // Mitternacht, während MIND offen ist
 $("lf").onsubmit=async e=>{e.preventDefault();$("lerr").textContent="";
   const r=await db.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});
   if(r.error)$("lerr").textContent="Login fehlgeschlagen: "+r.error.message};

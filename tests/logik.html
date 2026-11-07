@@ -92,18 +92,24 @@ async function run(){
   await ta("Gespeichert wird es auch in der Datenbank",async()=>{await sleep(200);return E(`MOCK.habits.find(h=>h.id===habits[0].id).settings_log.length`)},1);
 
   group("Fehler 2: Die App bleibt aktuell, auch wenn sie lange offen ist");
+  // "Zurück zur App": Die Seite meldet sich als sichtbar (auch wenn das Testfenster im Hintergrund ist)
+  const back=()=>{Object.defineProperty(W.document,"hidden",{get:()=>false,configurable:true});W.document.dispatchEvent(new W.Event("visibilitychange"))};
   await ta("Zurück zur App: Änderungen von einem anderen Gerät werden geladen",async()=>{
     const id=E("habits[2].id");E(`MOCK.habits.find(h=>h.id==="${id}").name="Vom Handy geändert"`);
-    W.document.dispatchEvent(new W.Event("visibilitychange"));await sleep(300);
+    back();await sleep(400);
     return E(`habits.find(h=>h.id==="${id}").name`)},"Vom Handy geändert");
+  await ta("Ein Haken, der während des Neuladens gesetzt wird, geht nicht verloren",async()=>{
+    const i=E(`+document.querySelector("#tiles .tile[data-t]").dataset.t`),want=E(`(()=>{const h=habits[${i}],n=cnt(h,TI);return n>=h.target?0:n+1})()`);
+    back();E(`document.querySelector('#tiles .tile[data-t="${i}"]').click()`);await sleep(400);
+    return E(`cnt(habits[${i}],TI)`)===want&&E(`+(MOCK.habits.find(h=>h.id===habits[${i}].id).done[TI]||0)`)===want},true);
   const tomorrow=day(1);
   await ta("Neuer Tag, aber gerade wird bearbeitet: nicht neu laden",async()=>{
     E(`ed={i:0,name:"x",days:[0],cat:"",col:"himmel",ico:"",tg:1,dt:"",tm:"",more:false};render()`);
     sessionStorage.setItem("mind-test-shift",String(864e5));W.__shift=864e5; // Uhr einen Tag vor
-    W.document.dispatchEvent(new W.Event("visibilitychange"));await sleep(300);return loads},1);
+    back();await sleep(400);return loads},1);
   await ta("Neuer Tag: App lädt neu und zeigt den neuen Tag",async()=>{
-    E("ed=null;render()");W.document.dispatchEvent(new W.Event("visibilitychange"));
-    for(let i=0;i<40&&loads<2;i++)await sleep(50);await waitLoaded();return [loads,E("TI")]},[2,tomorrow]);
+    E("ed=null;render()");back();
+    for(let i=0;i<60&&loads<2;i++)await sleep(50);await waitLoaded();return [loads,E("TI")]},[2,tomorrow]);
   sessionStorage.removeItem("mind-test-shift");
 
   document.getElementById("sum").textContent=fail?`${fail} von ${pass+fail} Tests fehlgeschlagen`:`Alle ${pass} Tests bestanden`;
