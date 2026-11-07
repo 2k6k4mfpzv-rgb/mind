@@ -29,8 +29,9 @@ Stand: 07.11.2026. Reihenfolge: erst Funktionen, Oberfläche und Struktur (Phase
   - [ ] MIND-Knopf in der Mitte der Tab-Leiste (dann Heute, Verlauf, MIND, Sammlung, Ich). Öffnet den Chat als Blatt von unten mit Vorschlägen („Woche besprechen“, „Neues Habit planen“). Vorschläge übernimmt man mit „Übernehmen“ oder „Anpassen“
   - [ ] KI-Einstiege: „Mini-Version vorschlagen“ im Menü der Kachel, „Woche besprechen“ oben im Verlauf, „Muster erklären“ pro Habit, „Hilf mir formulieren“ beim neuen Habit
   - [ ] Pro-Stil: dunkle Pro-Fläche, Funke in Koralle, kleine Plakette „PRO“ (nie laut, kein Schloss, nichts ausgegraut)
-  - [ ] **Pro-Schalter (Pauls Entscheidung 07.11.2026):** Alle Pro-Stellen werden fertig gebaut und markiert, aber bis zum Launch ist Pro für alle frei, damit Tester alles ausprobieren können. Ein zentraler Schalter auf dem Server (nicht nur in `index.html`, das Repo ist öffentlich) sperrt Pro später für alle ohne `plan = premium`. Einzelne Tester können über `plan = premium` Pro behalten. Auch in der Testphase gilt ein KI-Limit pro Nutzer, weil jede KI-Anfrage Geld kostet
-  - [ ] Faire Pro-Seite für alle ohne Pro: was Pro kann, „Vielleicht später“, „Preis folgt · monatlich kündbar“. Zum Reinschnuppern 1× im Monat „Woche besprechen“ gratis. Sie erscheint erst, wenn der Pro-Schalter an ist
+  - [ ] **Pro vorbereitet, nicht gesperrt (Pauls Entscheidung 07.11.2026):** Alle Pro-Stellen werden fertig gebaut und markiert, das Gerüst steht. Solange es kein bezahltes Pro gibt, können alle sie nutzen (im Rahmen des KI-Limits). Pro einführen heißt später nur: ein paar vorbereitete Schritte (siehe B4), kein Umbau. Technisch prüft das die Supabase-Funktion auf dem Server, nicht `index.html` (das Repo ist öffentlich). Wer Pro schon hat, z. B. Tester, behält es über `plan = premium`
+  - [ ] **KI-Anbieter (Pauls Entscheidung 07.11.2026):** Am Anfang kostenlose KI-Modelle mit festem Limit pro Nutzer, damit erst mal kein Geld ausgegeben wird. Anbieter und Modell stehen an genau einer Stelle (in der Supabase-Funktion), damit man später mit wenigen Zeilen wechseln kann. Wenn zahlende Nutzer es wirtschaftlich machen: bezahltes Modell und höhere Limits. Vorher prüfen: Nutzt der kostenlose Anbieter die Eingaben zum Training, und wo stehen die Server? Das betrifft den Datenschutz (B3), denn Habits können Gesundheitsdaten sein
+  - [ ] Faire Pro-Seite für alle ohne Pro: was Pro kann, „Vielleicht später“, „Preis folgt · monatlich kündbar“. Zum Reinschnuppern 1× im Monat „Woche besprechen“ gratis. Sie erscheint erst, wenn Pro eingeführt ist
   - Regeln: Die KI schreibt nie zuerst (kein Push, kein roter Punkt). Erst fragen, dann vorschlagen. Ohne Pro ist alles benutzbar, Pro-Stellen sind nur markiert
 - [ ] **A6 Mehr Statistiken:** Verlauf, Vergleiche, Serien-Rekorde (später teilweise Premium)
 - [ ] **A7 Oberfläche: Redesign „Puls“** (kommt **vor A4**, entschieden 07.11.2026, damit A4 und A5 gleich im neuen Design entstehen): Handy-Ansicht, Bedienung, Texte
@@ -46,7 +47,7 @@ Stand: 07.11.2026. Reihenfolge: erst Funktionen, Oberfläche und Struktur (Phase
   - [ ] Dazu (aus dem Review vom 07.11.2026): erster Start für neue Nutzer (leere Seiten freundlich füllen, kurze Einführung, Beispiel-Habits zum Antippen)
 - [ ] **B3 Rechtliches:** Impressum, Datenschutzerklärung, Einwilligung. Vor dem Öffnen klären, ggf. mit Beratung (z. B. IHK-Gründungsberatung, Steuerberater, Datenschutz).
 - [ ] **B4 Premium:** Zahlungsanbieter, Grenzen serverseitig erzwingen (nicht nur in der Oberfläche)
-  - [ ] Bezahlen auf der Pro-Seite aus A5 einbauen, Preis festlegen (monatlich kündbar), dann den Pro-Schalter aus A5 umlegen
+  - [ ] Pro einführen, wenn Leute dafür zahlen wollen: Bezahlen auf der Pro-Seite aus A5 einbauen, Preis festlegen (monatlich kündbar), Pro-Stellen für alle ohne `plan = premium` sperren (vorbereitet in A5), dann auf bezahlte KI und höhere Limits umstellen, sobald es sich wirtschaftlich lohnt
 
 ### Launch-Checkliste („1 Klick")
 Technisch ist das Öffnen ein Schalter in Supabase: *Authentication → Sign In / Providers → Allow new users to sign up*. Vorher muss erledigt sein:
@@ -58,5 +59,6 @@ Technisch ist das Öffnen ein Schalter in Supabase: *Authentication → Sign In 
 - [ ] Grenzen für Gratis-Nutzer im Code und in der Datenbank gesetzt
 - [ ] Backup gemacht
 - [ ] Kosten und Limits der Dienste geprüft (Supabase, Cloudflare, E-Mail, KI)
+- [ ] KI-Limit pro Nutzer gesetzt (kostenlose Modelle, siehe A5), damit offene Anmeldungen keine Kosten erzeugen
 - [ ] Feinschliff-Runde (aus dem Review vom 07.11.2026): Abstände, Animationen und Texte auf allen Seiten einmal zusammen durchgehen
 - [ ] Haken auf zwei Geräten gleichzeitig getestet (siehe A4)

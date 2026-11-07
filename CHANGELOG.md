@@ -18,8 +18,10 @@ Private Habit-Tracker-Website. Frontend: eine Datei (`public/index.html`). Daten
   - A7 Schritt 2: Kachel lange drücken, Pausieren, Einheit auf der Kachel
   - A7 Schritt 3: Sammlung
   - A5: MIND-Knopf, KI-Einstiege, Pro-Stil, faire Pro-Seite
-  - A5: Pro-Schalter (Pauls Entscheidung). Pro wird fertig gebaut, ist aber bis zum Launch für alle frei. Ein Schalter auf dem Server sperrt es später, und Tester können Pro behalten.
-  - B4: Bezahlen, danach den Pro-Schalter umlegen
+  - A5, Pauls Entscheidung: Pro ist vorbereitet, aber nicht gesperrt. Pro-Stellen werden fertig gebaut. Solange es kein bezahltes Pro gibt, können alle sie nutzen. Später wird Pro mit ein paar vorbereiteten Schritten eingeführt, ohne Umbau.
+  - A5, Pauls Entscheidung: Die KI läuft am Anfang mit kostenlosen Modellen und einem Limit pro Nutzer. Anbieter und Modell stehen an einer Stelle. Bezahlte KI und mehr Nutzung kommen erst, wenn es sich wirtschaftlich lohnt.
+  - B4: Pro einführen (Bezahlen, Preis, Pro-Stellen sperren, bezahlte KI)
+  - Launch-Checkliste: KI-Limit pro Nutzer
 - Am Code nichts geändert.
 
 ### 2026-11-07 – Puls Schritt 1.1: Fehler aus dem Review behoben, weniger Zahlen, Rückgängig, Logik-Tests
