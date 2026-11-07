@@ -83,6 +83,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .tabs button[aria-current="page"]{color:var(--accT)}
 .tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
+/* Rückgängig: kurzer Hinweis über der Tab-Leiste, wenn ein Tipp ein Mehrfach-Habit auf 0 gesetzt hat (kein Popup) */
+.undo{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;align-items:center;gap:12px;width:max-content;max-width:calc(100% - 32px);padding:6px 6px 6px 16px;border-radius:16px;background:var(--ink);color:var(--bg);font-size:.88rem;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.2)}
+.undo:empty{display:none}
+.undo span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.undo button{flex:none;min-height:40px;padding:0 14px;border-radius:11px;background:rgba(127,127,127,.25);font-weight:800}
+
 /* Neues Habit: Blatt von unten (am Mac in der Mitte) */
 dialog.sheet{position:fixed;inset:auto 0 0;margin:0 auto;width:100%;max-width:560px;max-height:92vh;padding:0;border:0;border-radius:28px 28px 0 0;background:var(--panel);color:var(--ink);overflow:auto;overscroll-behavior:contain}
 dialog.sheet::backdrop{background:rgba(20,19,25,.45)}
@@ -105,8 +111,7 @@ dialog.sheet[open]{animation:up .28s cubic-bezier(.2,.8,.2,1)}
 .hht{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .hht .ini{width:30px;height:30px;border-radius:10px;font-size:.85rem}
 .hht .ini svg{width:17px;height:17px}
-.hht b{flex:1;min-width:0;font-size:1rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hht small{font-size:.75rem;color:var(--mute);flex:none}
+.hht b{flex:1;min-width:0;font-size:1rem;line-height:1.25;font-weight:700;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere} /* lange Namen bekommen zwei Zeilen */
 .hb{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
 /* Mosaik aus Punkten: immer das volle Raster (12 Wochen x 7 Tage), so breit wie Platz ist. Leer = grauer Punkt,
    voll = geschafft, teilweise geschafft füllt sich von unten wie die Kacheln (--f = 0 bis 1) */
@@ -114,16 +119,16 @@ dialog.sheet[open]{animation:up .28s cubic-bezier(.2,.8,.2,1)}
 .mo i{aspect-ratio:1;border-radius:50%;background:var(--moo)} /* im Dunkeln etwas heller als die Karte */
 .mo i.p{background:linear-gradient(to top,var(--hc) calc(var(--f)*100%),var(--moo) calc(var(--f)*100%))}
 .mo i.f{background:var(--hc)}
-.st{display:grid;gap:10px;justify-items:end;text-align:right}
-.st>span>b{display:block;font-size:1.2rem;font-weight:800;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+.mo i.t{box-shadow:0 0 0 2px var(--panel),0 0 0 3.5px var(--mute)} /* heute: feiner Ring zur Orientierung */
+.st{display:grid;gap:4px;justify-items:center;flex:none}
 .st small{display:block;font-size:.72rem;color:var(--mute)}
 /* Konstanz-Ring pro Habit (wie der Tagesring auf Heute, in der Habit-Farbe) */
-.hr{display:block;position:relative;width:46px;height:46px;margin:0 0 2px auto}
+.hr{display:block;position:relative;width:54px;height:54px}
 .hr svg{display:block;transform:rotate(-90deg)}
 .hr circle{fill:none;stroke-width:6}
 .hr .rt{stroke:var(--moo)}
 .hr .rp{stroke:var(--hc);stroke-linecap:round}
-.hr b{position:absolute;inset:0;display:grid;place-items:center;font-size:.72rem;font-weight:800;font-variant-numeric:tabular-nums}
+.hr b{position:absolute;inset:0;display:grid;place-items:center;font-size:.8rem;font-weight:800;font-variant-numeric:tabular-nums}
 .wk{padding:12px 16px 16px;border-top:1px solid var(--line)}
 .nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .ic{width:36px;height:36px;border-radius:50%;color:var(--mute);font-size:1.3rem}
@@ -252,7 +257,7 @@ details.restore .note{margin:12px 0 10px}
 
 <!-- Verlauf: pro Habit eine Karte mit 12-Wochen-Mosaik, aufklappbar (nachtragen, bearbeiten). Darunter Fortschritt und Muster. -->
 <section class="view" id="v-verlauf" hidden>
-  <h1>Verlauf</h1><p class="sub">Was du schon geschafft hast</p>
+  <h1>Verlauf</h1><p class="sub">Die Punkte zeigen die letzten 12 Wochen, der Ring deine Konstanz der letzten 30 Tage.</p>
   <div class="chips" id="chips"></div>
   <div class="hcs" id="grid"></div>
   <div class="panel ovw">
@@ -304,6 +309,7 @@ details.restore .note{margin:12px 0 10px}
   </div>
 </section>
 
+<div class="undo" id="undo" aria-live="polite"></div>
 <nav class="tabs" id="tabs" aria-label="Bereiche">
   <button data-tab="heute" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>Heute</button>
   <button data-tab="verlauf"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-7M12 20V5M19 20v-10"/></svg>Verlauf</button>
@@ -419,6 +425,13 @@ function range(from,to){ // [erledigt, geplant] von..bis (einschl.), max. heute
     habits.forEach(h=>{if(sched(h,d)){s++;if(ok(h,iso(d)))c++}});
   return [c,s];
 }
+// Konstanz: geschafft ÷ geplant in den letzten 30 Tagen, für eine Liste von Habits (Heute: alle, Verlauf: eins).
+// Heute zählt erst mit, wenn geschafft, damit die Zahl morgens nicht absackt. null = nichts geplant.
+function konst(hs){
+  let c=0,s=0;
+  for(let i=0;i<30;i++){const d=addDays(today,-i),k=iso(d);hs.forEach(h=>{if(!sched(h,d))return;const y=ok(h,k);if(i||y){s++;if(y)c++}})}
+  return s?Math.round(c/s*100):null;
+}
 function kpi(i,r){$("k"+i).innerHTML=r[0]+"<em>von "+r[1]+"</em>";$("b"+i).style.width=(r[1]?r[0]/r[1]*100:0)+"%"}
 
 // --- Puls: Heute ---
@@ -449,10 +462,9 @@ function ring(anim){ // Tagesring: Mehrfach-Habits zählen anteilig
   $("cheer").textContent=td.length&&p>=1?"Alles geschafft für heute.":"";
   if(anim&&p>=1&&ringP<1){$("ring").classList.remove("pop");void $("ring").offsetWidth;$("ring").classList.add("pop")}
   ringP=p;
-  // Konstanz der letzten 30 Tage. Heute zählt erst mit, was schon geschafft ist (kein Minus am Morgen).
-  const [c,s]=range(addDays(today,-29),addDays(today,-1)),d=td.filter(h=>ok(h,TI)).length;
-  $("kc").hidden=!(s+d);
-  $("kq").textContent=s+d?Math.round((c+d)/(s+d)*100)+" %":"";
+  const k=konst(habits); // Konstanz der letzten 30 Tage, gleiche Rechnung wie die Ringe im Verlauf
+  $("kc").hidden=k==null;
+  $("kq").textContent=k==null?"":k+" %";
   // Faire Serie für den ganzen Tag: Ein Tag zählt, wenn mindestens ein Habit geschafft ist.
   const any=x=>habits.some(h=>ok(h,iso(x))),sr=fair(any,x=>any(x)||habits.some(h=>sched(h,x)),habits.reduce((m,h)=>h.created<m?h.created:m,TI));
   $("kn").innerHTML=(sr.n?`Serie ${sr.n} ${sr.n===1?"Tag":"Tage"}`:"Neue Serie")+"<br>"+(sr.free?"1 Puffertag frei":"Puffertag genutzt");
@@ -460,19 +472,11 @@ function ring(anim){ // Tagesring: Mehrfach-Habits zählen anteilig
 
 // --- Puls: Verlauf ---
 const M0=addDays(monday(today),-77); // Montag vor 11 Wochen: Das Mosaik zeigt 12 Wochen bis heute
-function mosaic(h){ // Spalte = Woche, Zeile = Wochentag. Jeder der 84 Tage ist ein Punkt, auch vor dem Start und in der Zukunft (dann leer). Teilweise = Punkt füllt sich anteilig.
+function mosaic(h){ // Spalte = Woche, Zeile = Wochentag. Jeder der 84 Tage ist ein Punkt, auch vor dem Start und in der Zukunft (dann leer). Teilweise = Punkt füllt sich anteilig. Heute hat einen feinen Ring.
   let m="";
-  for(let i=0;i<84;i++){const d=addDays(M0,i),k=iso(d),f=d>today?0:Math.min(1,cnt(h,k)/tg(h,k));
-    m+=f>=1?'<i class="f"></i>':f>0?`<i class="p" style="--f:${f.toFixed(2)}"></i>`:"<i></i>"}
+  for(let i=0;i<84;i++){const d=addDays(M0,i),k=iso(d),f=d>today?0:Math.min(1,cnt(h,k)/tg(h,k)),c=[f>=1?"f":f>0?"p":"",k===TI?"t":""].filter(Boolean).join(" ");
+    m+=`<i${c?` class="${c}"`:""}${f>0&&f<1?` style="--f:${f.toFixed(2)}"`:""}></i>`}
   return m;
-}
-function stats(h){ // [insgesamt geschafft, beste Woche [erledigt, geplant], Konstanz in % der letzten 12 Wochen]
-  const tot=Object.keys(h.done).filter(k=>ok(h,k)).length;let best=[0,0],C=0,S=0;
-  for(let w=0;w<12;w++){let c=0,s=0;
-    for(let j=0;j<7;j++){const d=addDays(M0,w*7+j);if(d>today)break;if(sched(h,d)){s++;if(ok(h,iso(d)))c++}}
-    if(s&&(!best[1]||c/s>best[0]/best[1]||(c/s===best[0]/best[1]&&s>best[1])))best=[c,s];C+=c;S+=s}
-  if(sched(h,today)&&!ok(h,TI))S--; // heute zählt erst mit, wenn geschafft
-  return [tot,best,S?Math.round(C/S*100):null];
 }
 function weekHtml(h,hi,li,len,start,tot){ // aufgeklappt: Woche zum Nachtragen, Serie, Knöpfe
   const s=streak(h);
@@ -488,9 +492,9 @@ function weekHtml(h,hi,li,len,start,tot){ // aufgeklappt: Woche zum Nachtragen, 
   return x+`</div><p class="meta">Insgesamt ${tot}× geschafft · Serie ${s} ${s===1?"Tag":"Tage"}${h.target>1?" · "+h.target+"× täglich":""}${h.daytime?" · "+esc(dtLabel(h.daytime)):""}${h.cat?" · "+esc(h.cat):""}</p><div class="acts"><button data-up="${hi}" aria-label="${esc(h.name)} nach oben"${li===0?" disabled":""}>↑</button><button data-down="${hi}" aria-label="${esc(h.name)} nach unten"${li===len-1?" disabled":""}>↓</button><button data-edit="${hi}">Bearbeiten</button><button data-del="${hi}"${pend===hi?' class="warn"':""}>${pend===hi?"Wirklich löschen?":"Löschen"}</button></div></div>`;
 }
 function card(h,hi,li,len,start){
-  const [tot,best,k]=stats(h),o=openId===h.id,hx=hexOf(h),HR=2*Math.PI*19;
-  const kr=`<span class="hr"><svg width="46" height="46" viewBox="0 0 46 46"><circle class="rt" cx="23" cy="23" r="19"/>${k?`<circle class="rp" cx="23" cy="23" r="19" style="stroke-dasharray:${(k/100*HR).toFixed(1)} ${HR.toFixed(1)}"/>`:""}</svg><b>${k==null?"–":k+"%"}</b></span>`;
-  return `<div class="panel hc" style="--hc:${hx}"><button class="hh" data-open="${hi}" aria-expanded="${o}" aria-label="${esc(h.name)}: Konstanz ${k??0} Prozent, beste Woche ${best[0]} von ${best[1]}, insgesamt ${tot}-mal geschafft"><span class="hht"><span class="ini" style="--c:${hx}">${icoOf(h)}</span><b>${esc(h.name)}</b><small>12 Wochen</small></span><span class="hb" aria-hidden="true"><span class="mo">${mosaic(h)}</span><span class="st"><span>${kr}<small>Konstanz</small></span><span><b>${best[1]?best[0]+" / "+best[1]:"–"}</b><small>beste Woche</small></span></span></span></button>${o?(ed&&ed.i===hi?editHtml():weekHtml(h,hi,li,len,start,tot)):""}</div>`;
+  const tot=Object.keys(h.done).filter(x=>ok(h,x)).length,k=konst([h]),o=openId===h.id,hx=hexOf(h),HR=2*Math.PI*23;
+  const kr=`<span class="hr"><svg width="54" height="54" viewBox="0 0 54 54"><circle class="rt" cx="27" cy="27" r="23"/>${k?`<circle class="rp" cx="27" cy="27" r="23" style="stroke-dasharray:${(k/100*HR).toFixed(1)} ${HR.toFixed(1)}"/>`:""}</svg><b>${k==null?"–":k+"%"}</b></span>`;
+  return `<div class="panel hc" style="--hc:${hx}"><button class="hh" data-open="${hi}" aria-expanded="${o}" aria-label="${esc(h.name)}: Konstanz ${k==null?"noch keine":k+" Prozent"}, insgesamt ${tot}-mal geschafft"><span class="hht"><span class="ini" style="--c:${hx}">${icoOf(h)}</span><b>${esc(h.name)}</b></span><span class="hb" aria-hidden="true"><span class="mo">${mosaic(h)}</span><span class="st">${kr}<small>Konstanz</small></span></span></button>${o?(ed&&ed.i===hi?editHtml():weekHtml(h,hi,li,len,start,tot)):""}</div>`;
 }
 
 function editHtml(){
@@ -529,7 +533,7 @@ $("tiles").addEventListener("click",e=>{
   if(b.dataset.new){openSheet();return}
   gen++;
   const h=habits[+b.dataset.t],n=cnt(h,TI);pend=-1;
-  n>=h.target?delete h.done[TI]:h.done[TI]=n+1;
+  if(n>=h.target){delete h.done[TI];offerUndo(h,TI,n)}else h.done[TI]=n+1;
   b.style.setProperty("--p",tileP(h));b.setAttribute("aria-pressed",tileP(h)>=1);b.setAttribute("aria-label",tileLab(h));
   b.querySelectorAll(".tc").forEach(x=>x.innerHTML=tileIn(h));
   render(true);
@@ -548,7 +552,7 @@ $("grid").addEventListener("click",e=>{
   if(b.dataset.save!==undefined){saveEdit();return}
   if(b.dataset.del!==undefined){const i=+b.dataset.del;if(pend===i){pend=-1;ed=null;const id=habits[i].id;habits.splice(i,1);db.from("habits").delete().eq("id",id).then(chk)}else pend=i;render();return}
   // Tippen zählt +1, bei erreichtem Ziel zurück auf 0 (Ziel 1 = an/aus wie bisher)
-  if(b.dataset.k){pend=-1;const h=habits[+b.dataset.h],k=b.dataset.k,n=cnt(h,k);n>=tg(h,k)?delete h.done[k]:h.done[k]=n+1;render();db.from("habits").update({done:h.done}).eq("id",h.id).then(chk)}
+  if(b.dataset.k){pend=-1;const h=habits[+b.dataset.h],k=b.dataset.k,n=cnt(h,k);if(n>=tg(h,k)){delete h.done[k];offerUndo(h,k,n)}else h.done[k]=n+1;render();db.from("habits").update({done:h.done}).eq("id",h.id).then(chk)}
 });
 $("grid").addEventListener("input",e=>{if(!ed)return;const t=e.target.id,v=e.target.value;if(t==="en")ed.name=v;if(t==="ec")ed.cat=v;if(t==="etg")ed.tg=v;if(t==="edt")ed.dt=v;if(t==="etm")ed.tm=v});
 $("grid").addEventListener("toggle",e=>{if(ed&&e.target.classList.contains("more"))ed.more=e.target.open},true);
@@ -562,6 +566,17 @@ function saveEdit(){
   logChange(h,upd);Object.assign(h,upd);ed=null;$("err").textContent="";render();
   db.from("habits").update(upd).eq("id",h.id).then(chk);
 }
+// Rückgängig: Hat ein Tipp mehr als einen Haken auf 0 gesetzt (z. B. Wasser 4 von 4), 5 Sekunden lang zurückholen können.
+// Bei Ziel 1 reicht ein weiterer Tipp, dort erscheint nichts.
+let undoT=0,undoF=null;
+function offerUndo(h,k,n){
+  if(n<2)return;
+  undoF=()=>{const x=habits.find(y=>y.id===h.id);if(!x)return;gen++;x.done[k]=n;render();db.from("habits").update({done:x.done}).eq("id",x.id).then(chk)};
+  $("undo").innerHTML=`<span>${esc(h.name)}: zurück auf 0</span><button type="button">Rückgängig</button>`;
+  clearTimeout(undoT);undoT=setTimeout(hideUndo,5000);
+}
+function hideUndo(){$("undo").innerHTML="";undoF=null;clearTimeout(undoT)}
+$("undo").onclick=e=>{if(!e.target.closest("button")||!undoF)return;const f=undoF;hideUndo();f()};
 // Ändern sich Tage oder Tagesziel, gelten die alten Einstellungen weiter für alle Tage bis gestern.
 // Wurde heute schon geändert, sind die Einstellungen von vor heute bereits gemerkt.
 function logChange(h,upd){

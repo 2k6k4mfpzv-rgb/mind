@@ -41,7 +41,7 @@ async function ta(name,fn,want){let got;try{got=await fn()}catch(e){got="Fehler:
 
 async function boot(){ // App mit nachgebauter Datenbank laden und warten, bis sie angemeldet und geladen ist
   const html=await (await fetch("../public/index.html",{cache:"no-store"})).text();
-  const app=html.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase[^"]*"><\/script>/,'<script src="/tests/mock-supabase.js"><\/script>').replace("<head>",'<head><base href="/public/">'+SHIM);
+  const app=html.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase[^"]*"><\/script>/,'<script src="/tests/mock-supabase.js"><\/script>').replace('href="fonts/','href="/public/fonts/').replace("<head>",'<head><base href="/public/">'+SHIM);
   if(!app.includes("/tests/mock-supabase.js"))throw new Error("Supabase-Zeile in index.html nicht gefunden");
   loads=0;
   await new Promise(r=>{fr.onload=()=>{loads++;W=fr.contentWindow;r()};fr.srcdoc=app});
@@ -90,6 +90,24 @@ async function run(){
   t("Zweite Änderung am selben Tag behält das ursprüngliche alte Ziel",()=>edit(0,{tg:3}),[{until:E("TI"),days:E("habits[0].days"),target:wasser}]);
   t("Nur den Namen ändern merkt sich nichts",()=>edit(1,{name:"Meditation"}),[]);
   await ta("Gespeichert wird es auch in der Datenbank",async()=>{await sleep(200);return E(`MOCK.habits.find(h=>h.id===habits[0].id).settings_log.length`)},1);
+
+  group("Weniger Zahlen, Rückgängig, Orientierung");
+  const konst=E("konst");
+  t("Konstanz: letzte 30 Tage, heute zählt erst, wenn geschafft",()=>[konst([habit({created:day(-40),done:fill(-15,-1)})]),konst([habit({created:day(-40),done:fill(-15,0)})])],[52,53]);
+  t("Konstanz ohne geplante Tage zeigt nichts statt 0 %",()=>konst([habit({created:day(0),days:[(E("wdi(today)")+1)%7]})]),null);
+  t("Heute und Verlauf rechnen die Konstanz gleich",()=>E(`$("kq").textContent===konst(habits)+" %"`),true);
+  t("Keine „beste Woche“ und kein „12 Wochen“ mehr auf den Karten",()=>E(`/beste Woche|12 Wochen/.test($("grid").textContent)`),false);
+  t("Heute ist im Mosaik markiert, genau ein Punkt pro Karte",()=>E(`[...document.querySelectorAll("#grid .mo")].every(m=>m.querySelectorAll("i.t").length===1)`),true);
+  await ta("Rückgängig: Mehrfach-Habit auf 0 gesetzt, der Knopf holt es zurück",async()=>{
+    const i=E("habits.findIndex(h=>h.target>1&&sched(h,today))");
+    E(`habits[${i}].done[TI]=habits[${i}].target;render();document.querySelector('#tiles [data-t="${i}"]').click()`);
+    const shown=E(`cnt(habits[${i}],TI)===0&&$("undo").textContent.includes("Rückgängig")`);
+    E(`$("undo").querySelector("button").click()`);await sleep(200);
+    return [shown,E(`cnt(habits[${i}],TI)===habits[${i}].target`),E(`+MOCK.habits.find(h=>h.id===habits[${i}].id).done[TI]===habits[${i}].target`),E(`$("undo").textContent`)]},[true,true,true,""]);
+  t("Bei Ziel 1 erscheint kein Rückgängig (ein Tipp holt den Haken zurück)",()=>{
+    const i=E("habits.findIndex(h=>h.target===1&&sched(h,today))");
+    E(`habits[${i}].done[TI]=1;render();document.querySelector('#tiles [data-t="${i}"]').click()`);
+    return [E(`cnt(habits[${i}],TI)`),E(`$("undo").textContent`)]},[0,""]);
 
   group("Fehler 2: Die App bleibt aktuell, auch wenn sie lange offen ist");
   // "Zurück zur App": Die Seite meldet sich als sichtbar (auch wenn das Testfenster im Hintergrund ist)
