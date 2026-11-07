@@ -18,7 +18,8 @@ Private Habit-Tracker-Website. Frontend: eine Datei (`public/index.html`). Daten
   - A7 Schritt 2: Kachel lange drücken, Pausieren, Einheit auf der Kachel
   - A7 Schritt 3: Sammlung
   - A5: MIND-Knopf, KI-Einstiege, Pro-Stil, faire Pro-Seite
-  - B4: Bezahlen
+  - A5: Pro-Schalter (Pauls Entscheidung). Pro wird fertig gebaut, ist aber bis zum Launch für alle frei. Ein Schalter auf dem Server sperrt es später, und Tester können Pro behalten.
+  - B4: Bezahlen, danach den Pro-Schalter umlegen
 - Am Code nichts geändert.
 
 ### 2026-11-07 – Puls Schritt 1.1: Fehler aus dem Review behoben, weniger Zahlen, Rückgängig, Logik-Tests
