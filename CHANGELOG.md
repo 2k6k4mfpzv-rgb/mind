@@ -12,6 +12,15 @@ Private Habit-Tracker-Website. Frontend: eine Datei (`public/index.html`). Daten
 
 ## Änderungen (neueste zuerst)
 
+### 2026-11-07 – Roadmap: Zielbild „Puls + KI“ eingeplant
+- **Warum:** Paul hat entschieden, dass das Konzeptbild „Puls + KI“ der Idealzustand ist, außer dem, was in Puls Schritt 1 und 1.1 bewusst anders gebaut wurde. Alles soll in der Roadmap stehen, damit nichts vergessen wird. Abgleich im Vault: `Habit Tracker/MIND – Zielbild Puls + KI (Abgleich).md`.
+- **Änderung in `ROADMAP.md`:**
+  - A7 Schritt 2: Kachel lange drücken, Pausieren, Einheit auf der Kachel
+  - A7 Schritt 3: Sammlung
+  - A5: MIND-Knopf, KI-Einstiege, Pro-Stil, faire Pro-Seite
+  - B4: Bezahlen
+- Am Code nichts geändert.
+
 ### 2026-11-07 – Puls Schritt 1.1: Fehler aus dem Review behoben, weniger Zahlen, Rückgängig, Logik-Tests
 - **Warum:** Paul hat vor dem Merge gefragt, was ein Profi anders machen würde. Dabei kamen zwei echte Fehler heraus, die es auch live schon gab, dazu Punkte, die im Alltag nerven. Review im Vault: `Habit Tracker/MIND – Puls Schritt 1 Review (Profi-Blick).md`. Paul hat entschieden, alles gleich mit in diesen Pull Request zu nehmen.
 - **Fehler 1 – alte Haken zählten nach einer Zieländerung nur teilweise:** Wasser und Supplements hatten vor A2 nur „1 = geschafft“. Seit das Ziel 4 bzw. 2 ist, zählte eine alte 1 als „1 von 4“. Konstanz 17 % und 13 %, viele halbe Punkte.
