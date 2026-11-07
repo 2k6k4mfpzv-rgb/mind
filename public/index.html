@@ -69,7 +69,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .bot small{display:block;font-size:.78rem;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tc.on small{color:var(--dark)}
 .tile.add{background:none;border:1.5px dashed var(--line2)}
-.tile.add .ini{background:var(--acc);font-size:1.3rem}
+.tile.add .ini{background:var(--acc)}
+.tile.add .ini svg{stroke-width:2.4} /* Plus als Zeichnung statt Textzeichen, damit es genau in der Mitte sitzt */
 .kc{margin-top:14px;padding:13px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
 .kc small{display:block;font-size:.78rem;color:var(--mute)}
 .kc b{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
@@ -432,7 +433,7 @@ function renderHeute(){
   $("dchips").innerHTML=bs.length?[""].concat(bs).map(b=>`<button class="${dfil===b?"on":""}" data-df="${b}" aria-pressed="${dfil===b}">${b?dtLabel(b):"Alle"}</button>`).join(""):"";
   const empty=!habits.length?"Noch keine Habits. Leg dein erstes an.":!td.length?"Heute ist nichts geplant. Genieß den Tag.":"";
   $("tiles").innerHTML=(empty?`<p class="empty">${empty}</p>`:"")+td.filter(([h])=>!dfil||bucket(h.daytime)===dfil).map(([h,hi])=>`<button class="tile" data-t="${hi}" style="--c:${hexOf(h)};--p:${tileP(h)}" aria-pressed="${tileP(h)>=1}" aria-label="${esc(tileLab(h))}"><span class="fill"></span><span class="tc" aria-hidden="true">${tileIn(h)}</span><span class="tc on" aria-hidden="true">${tileIn(h)}</span></button>`).join("")
-    +'<button class="tile add" data-new="1" style="--p:0"><span class="tc"><span class="tr"><span class="ini">+</span></span><span class="bot"><b>Neues Habit</b></span></span></button>';
+    +'<button class="tile add" data-new="1" style="--p:0"><span class="tc"><span class="tr"><span class="ini"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg></span></span><span class="bot"><b>Neues Habit</b></span></span></button>';
 }
 let ringP=0;
 function ring(anim){ // Tagesring: Mehrfach-Habits zählen anteilig
