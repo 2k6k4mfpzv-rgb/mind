@@ -28,8 +28,8 @@ Stand: 07.11.2026. Reihenfolge: erst Funktionen, Oberfläche und Struktur (Phase
   - [ ] Vorher (aus dem Review vom 07.11.2026): `public/index.html` in Dateien aufteilen (Aussehen, Logik, Oberfläche), weil A5 viel Code dazubringt
 - [ ] **A6 Mehr Statistiken:** Verlauf, Vergleiche, Serien-Rekorde (später teilweise Premium)
 - [ ] **A7 Oberfläche: Redesign „Puls“** (kommt **vor A4**, entschieden 07.11.2026, damit A4 und A5 gleich im neuen Design entstehen): Handy-Ansicht, Bedienung, Texte
-  - [ ] Schritt 1: Puls-Farben und Schrift, Startseite „Heute“ mit Kacheln und Tagesring, Tab-Leiste (Heute, Verlauf, Ich), Verlauf mit Punkte-Mosaik und Konstanz-Ring pro Habit, Farbe und Symbol pro Habit (Spalten `color`, `icon`), faire Serie mit Puffertag
-  - [ ] Schritt 1.1 (Review vom 07.11.2026, im selben Pull Request): alte Haken zählen nach Änderungen richtig (Spalte `settings_log`), App bleibt aktuell (Mitternacht, anderes Gerät), weniger Zahlen (Konstanz überall 30 Tage), lange Namen, Rückgängig, Heute-Markierung im Mosaik, Plus mittig, Logik-Tests (`tests/logik.html`)
+  - [x] Schritt 1: Puls-Farben und Schrift, Startseite „Heute“ mit Kacheln und Tagesring, Tab-Leiste (Heute, Verlauf, Ich), Verlauf mit Punkte-Mosaik und Konstanz-Ring pro Habit, Farbe und Symbol pro Habit (Spalten `color`, `icon`), faire Serie mit Puffertag
+  - [x] Schritt 1.1 (Review vom 07.11.2026, im selben Pull Request): alte Haken zählen nach Änderungen richtig (Spalte `settings_log`), App bleibt aktuell (Mitternacht, anderes Gerät), weniger Zahlen (Konstanz überall 30 Tage), lange Namen, Rückgängig, Heute-Markierung im Mosaik, Plus mittig, Logik-Tests (`tests/logik.html`)
   - [ ] Spätere Schritte (noch offen): Kachel lange drücken (Menü), Sammlung als Belohnung
 
 ## Phase B: Öffnen für andere (Launch)
