@@ -12,6 +12,26 @@ Private Habit-Tracker-Website. Frontend: eine Datei (`public/index.html`). Daten
 
 ## Änderungen (neueste zuerst)
 
+### 2026-11-07 – Redesign „Puls“, Schritt 1 (Startseite Heute, Tab-Leiste, Farbe pro Habit)
+- **Warum:** Paul hat sich für das Redesign-Konzept „Puls“ entschieden (farbige Kacheln, die sich füllen, Tagesring, Konstanz statt harter Serie). Es kommt vor A4, damit A4 und A5 gleich im neuen Design gebaut werden. Plan im Vault: `Habit Tracker/MIND – Puls Schritt 1 (Plan).md`.
+- **Datenbank:** Neue Spalte `color` in `habits` (Standard leer = automatisch, erlaubt sind 8 Farbnamen). Bestehende Habits bekommen einmalig der Reihe nach eine Farbe, sonst wird nichts geändert. Datei `docs/2026-11-07_puls-farbe.sql`. **Muss laufen, bevor der neue Code getestet wird** (die Vorschau nutzt dieselbe Datenbank). Der alte Code auf `main` stört sich nicht an der Spalte.
+- **Neue Dateien:** `public/fonts/plus-jakarta-sans.woff2` (Schrift Plus Jakarta Sans, 27 KB, aus `@fontsource-variable/plus-jakarta-sans` Version 5.2.8) und `public/fonts/ofl.txt` (Lizenz, SIL Open Font License). Die Schrift kommt vom eigenen Server, nicht von Google (DSGVO).
+- **Änderung in `public/index.html`:**
+  - Puls-Farben hell und dunkel als CSS-Variablen, Schrift Plus Jakarta Sans. Hell oder dunkel folgt wie bisher dem Gerät. Das große „MIND“ oben fällt weg (bleibt auf der Login-Seite).
+  - Neue Startseite **Heute**: Datum, „Hey [Name]“ (ohne Name „Heute“) und Tagesring. Darunter die heute geplanten Habits als farbige Kacheln. Antippen füllt die Kachel von unten, Mehrfach-Habits anteilig (z. B. 4 von 6). Volles Ziel = Haken, nochmal tippen = zurück auf 0, wie im Raster.
+  - Der Tagesring zählt Mehrfach-Habits anteilig. Ist er voll, wächst er kurz und es steht „Alles geschafft für heute.“ da. Mit „Bewegung reduzieren“ am Gerät gibt es keine Animationen.
+  - Filter Alle, Morgen, Mittag, Abend aus der Tageszeit. Uhrzeiten zählen vor 12 Uhr als Morgen, bis 17 Uhr als Mittag, danach als Abend. Die Knöpfe erscheinen nur, wenn heute Habits mit Tageszeit dabei sind.
+  - Karte „Konstanz · 30 Tage“: erledigt im Vergleich zu geplant in den letzten 30 Tagen. Heute zählt erst mit, was schon geschafft ist, damit die Quote morgens nicht absackt.
+  - Kachel „Neues Habit“ öffnet das bekannte Formular als Blatt von unten (am Mac in der Mitte), jetzt mit Farbauswahl. Vorgewählt ist die Farbe, die am wenigsten benutzt wird.
+  - **Tab-Leiste** unten: Heute, Verlauf, Ich. Die Knöpfe „Einstellungen“ und „‹ Übersicht“ fallen dafür weg.
+  - **Verlauf:** das bisherige Wochenraster (zum Nachtragen), Fortschritt und Wochentags-Muster. Bearbeiten (jetzt mit Farbe), Verschieben und Löschen bleiben an den Zeilen. Jede Zeile zeigt einen Farbpunkt, erledigte Tage sind in der Habit-Farbe gefüllt. Am Handy steht der Name über der ganzen Breite, die 7 Tage darunter.
+  - **Kein Rot, kein X:** Ein vergangener Tag ohne Haken ist ein ruhiges leeres Feld, der Strich fällt weg. Legende: Erledigt, Heute dran, Ohne Haken, Kommt noch, Nicht geplant.
+  - **Ich:** die Einstellungen aus A3 im ruhigen Listenstil, dazu „Konto“ mit der angemeldeten E-Mail und „Abmelden“.
+  - Petrol ist etwas heller als im Entwurf (`#3A9A99` statt `#2E8C8C`), damit die dunkle Schrift auf der Kachel gut lesbar bleibt (Kontrast über 4,5 : 1).
+  - Export und Import nehmen `color` mit. Ein altes Backup ohne Farbe bekommt automatische Farben.
+- **Nicht geändert:** Abhaken-Logik, Serie, Fortschritt, Muster, Erinnerung, Login, Abmelden.
+- **Teststand:** Lokal mit einer nachgebauten Datenbank im Browser geprüft, im Handy-Format (375 px) und am Mac (1280 px), hell und dunkel: Kacheln füllen (auch mehrfach und zurück auf 0), Tagesring und „Alles geschafft“, Filter, Neues Habit mit Farbe, leeres Formular, Nachtragen im Raster, Bearbeiten mit Farbe, Verschieben, Löschen in zwei Klicks, Name im Gruß, Export und Import (auch altes Backup ohne Farbe), Fehlerfall ohne Netz, Abmelden und Anmelden. Noch nicht auf der Vorschau mit echter Datenbank getestet.
+
 ### 2026-11-06 – A3: Profil und Einstellungen
 - **Warum:** Grundlage für spätere Nutzer und Premium (Feld `plan`), und die Erinnerung soll auf allen Geräten gleich sein (Roadmap A3).
 - **Datenbank:** Neue Tabelle `profiles` (eine Zeile pro Konto: `name`, `timezone`, `plan` Standard `free`, `rem_on`, `rem_time`). Row Level Security: nur das eigene Profil lesen und ändern. Aus der App dürfen nur `name`, `timezone`, `rem_on` und `rem_time` geändert werden, `plan` nie. Ein Trigger legt für jedes neue Konto automatisch ein Profil an, bestehende Konten bekommen eins beim Einspielen. Datei `docs/2026-11-06_a3-profiles.sql`. Die Tabelle `habits` bleibt unverändert.
