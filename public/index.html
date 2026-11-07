@@ -107,14 +107,22 @@ dialog.sheet[open]{animation:up .28s cubic-bezier(.2,.8,.2,1)}
 .hht b{flex:1;min-width:0;font-size:1rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hht small{font-size:.75rem;color:var(--mute);flex:none}
 .hb{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-.mo{display:grid;grid-template-rows:repeat(7,11px);grid-auto-flow:column;grid-auto-columns:11px;gap:3px}
-.mo i{border-radius:3.5px}
-.mo i.o{background:var(--moo)} /* leeres Feld im Mosaik, im Dunkeln etwas heller als die Karte */
-.mo i.p{background:var(--moo);background:color-mix(in srgb,var(--hc) 45%,var(--moo))}
+/* Mosaik aus Punkten: voll = geschafft, teilweise geschafft füllt sich von unten wie die Kacheln (--f = 0 bis 1) */
+.mo{display:grid;grid-template-rows:repeat(7,12px);grid-auto-flow:column;grid-auto-columns:12px;gap:3px}
+.mo i{border-radius:50%}
+.mo i.o{background:var(--moo)} /* leerer Punkt, im Dunkeln etwas heller als die Karte */
+.mo i.p{background:var(--moo);background:linear-gradient(to top,var(--hc) calc(var(--f)*100%),var(--moo) calc(var(--f)*100%))}
 .mo i.f{background:var(--hc)}
-.st{display:grid;gap:10px;text-align:right}
-.st b{display:block;font-size:1.35rem;font-weight:800;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
-.st small{font-size:.72rem;color:var(--mute)}
+.st{display:grid;gap:10px;justify-items:end;text-align:right}
+.st>span>b{display:block;font-size:1.2rem;font-weight:800;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+.st small{display:block;font-size:.72rem;color:var(--mute)}
+/* Konstanz-Ring pro Habit (wie der Tagesring auf Heute, in der Habit-Farbe) */
+.hr{display:block;position:relative;width:46px;height:46px;margin:0 0 2px auto}
+.hr svg{display:block;transform:rotate(-90deg)}
+.hr circle{fill:none;stroke-width:6}
+.hr .rt{stroke:var(--moo)}
+.hr .rp{stroke:var(--hc);stroke-linecap:round}
+.hr b{position:absolute;inset:0;display:grid;place-items:center;font-size:.72rem;font-weight:800;font-variant-numeric:tabular-nums}
 .wk{padding:12px 16px 16px;border-top:1px solid var(--line)}
 .nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .ic{width:36px;height:36px;border-radius:50%;color:var(--mute);font-size:1.3rem}
@@ -430,7 +438,7 @@ let ringP=0;
 function ring(anim){ // Tagesring: Mehrfach-Habits zählen anteilig
   const td=habits.filter(h=>sched(h,today)),p=td.length?td.reduce((s,h)=>s+tileP(h),0)/td.length:0,pc=Math.floor(p*100+1e-9);
   $("ring").hidden=!td.length;
-  $("rp").style.strokeDasharray=(p*RC).toFixed(1)+" "+RC.toFixed(1);
+  $("rp").style.strokeDasharray=(p*RC).toFixed(1)+" "+RC.toFixed(1);$("rp").style.opacity=p>0?1:0; // bei 0 % keinen runden Punkt zeigen
   $("rv").textContent=pc+"%";$("ring").setAttribute("aria-label",pc+" Prozent von heute geschafft");
   $("cheer").textContent=td.length&&p>=1?"Alles geschafft für heute.":"";
   if(anim&&p>=1&&ringP<1){$("ring").classList.remove("pop");void $("ring").offsetWidth;$("ring").classList.add("pop")}
@@ -446,20 +454,21 @@ function ring(anim){ // Tagesring: Mehrfach-Habits zählen anteilig
 
 // --- Puls: Verlauf ---
 const M0=addDays(monday(today),-77); // Montag vor 11 Wochen: Das Mosaik zeigt 12 Wochen bis heute
-function mosaic(h){ // Spalte = Woche, Zeile = Wochentag. Leer = nicht geplant oder Zukunft.
+function mosaic(h){ // Spalte = Woche, Zeile = Wochentag. Leer = nicht geplant oder Zukunft. Teilweise = Punkt füllt sich anteilig.
   let m="";
   for(let i=0;i<84;i++){const d=addDays(M0,i),k=iso(d),f=Math.min(1,cnt(h,k)/h.target);
-    m+=d>today||(!sched(h,d)&&!cnt(h,k))?"<i></i>":`<i class="${f>=1?"f":f>0?"p":"o"}"></i>`}
+    m+=d>today||(!sched(h,d)&&!cnt(h,k))?"<i></i>":f>=1?'<i class="f"></i>':f>0?`<i class="p" style="--f:${f.toFixed(2)}"></i>`:'<i class="o"></i>'}
   return m;
 }
-function stats(h){ // [insgesamt geschafft, beste Woche [erledigt, geplant]] der letzten 12 Wochen
-  const tot=Object.keys(h.done).filter(k=>ok(h,k)).length;let best=[0,0];
+function stats(h){ // [insgesamt geschafft, beste Woche [erledigt, geplant], Konstanz in % der letzten 12 Wochen]
+  const tot=Object.keys(h.done).filter(k=>ok(h,k)).length;let best=[0,0],C=0,S=0;
   for(let w=0;w<12;w++){let c=0,s=0;
     for(let j=0;j<7;j++){const d=addDays(M0,w*7+j);if(d>today)break;if(sched(h,d)){s++;if(ok(h,iso(d)))c++}}
-    if(s&&(!best[1]||c/s>best[0]/best[1]||(c/s===best[0]/best[1]&&s>best[1])))best=[c,s]}
-  return [tot,best];
+    if(s&&(!best[1]||c/s>best[0]/best[1]||(c/s===best[0]/best[1]&&s>best[1])))best=[c,s];C+=c;S+=s}
+  if(sched(h,today)&&!ok(h,TI))S--; // heute zählt erst mit, wenn geschafft
+  return [tot,best,S?Math.round(C/S*100):null];
 }
-function weekHtml(h,hi,li,len,start){ // aufgeklappt: Woche zum Nachtragen, Serie, Knöpfe
+function weekHtml(h,hi,li,len,start,tot){ // aufgeklappt: Woche zum Nachtragen, Serie, Knöpfe
   const s=streak(h);
   let x=`<div class="wk"><div class="nav"><button class="ic" data-wk="-1" aria-label="Vorherige Woche">‹</button><span class="cap">${fmt(start,{day:"numeric",month:"short"})} – ${fmt(addDays(start,6),{day:"numeric",month:"short"})}</span><button class="ic" data-wk="1" aria-label="Nächste Woche"${offset>=0?" disabled":""}>›</button></div><div class="wkd">`;
   for(let i=0;i<7;i++){
@@ -470,11 +479,12 @@ function weekHtml(h,hi,li,len,start){ // aufgeklappt: Woche zum Nachtragen, Seri
       x+=`<button class="c ${st}${n&&!done?" part":""}" ${d>today?"disabled":""} data-h="${hi}" data-k="${k}" aria-pressed="${done}" aria-label="${lab}${h.target>1?`, ${n} von ${h.target}`:""}">${done?CHECK:n?`<b>${n}</b>`:""}</button>`}
     x+="</span>";
   }
-  return x+`</div><p class="meta">Serie ${s} ${s===1?"Tag":"Tage"}${h.target>1?" · "+h.target+"× täglich":""}${h.daytime?" · "+esc(dtLabel(h.daytime)):""}${h.cat?" · "+esc(h.cat):""}</p><div class="acts"><button data-up="${hi}" aria-label="${esc(h.name)} nach oben"${li===0?" disabled":""}>↑</button><button data-down="${hi}" aria-label="${esc(h.name)} nach unten"${li===len-1?" disabled":""}>↓</button><button data-edit="${hi}">Bearbeiten</button><button data-del="${hi}"${pend===hi?' class="warn"':""}>${pend===hi?"Wirklich löschen?":"Löschen"}</button></div></div>`;
+  return x+`</div><p class="meta">Insgesamt ${tot}× geschafft · Serie ${s} ${s===1?"Tag":"Tage"}${h.target>1?" · "+h.target+"× täglich":""}${h.daytime?" · "+esc(dtLabel(h.daytime)):""}${h.cat?" · "+esc(h.cat):""}</p><div class="acts"><button data-up="${hi}" aria-label="${esc(h.name)} nach oben"${li===0?" disabled":""}>↑</button><button data-down="${hi}" aria-label="${esc(h.name)} nach unten"${li===len-1?" disabled":""}>↓</button><button data-edit="${hi}">Bearbeiten</button><button data-del="${hi}"${pend===hi?' class="warn"':""}>${pend===hi?"Wirklich löschen?":"Löschen"}</button></div></div>`;
 }
 function card(h,hi,li,len,start){
-  const [tot,best]=stats(h),o=openId===h.id,hx=hexOf(h);
-  return `<div class="panel hc" style="--hc:${hx}"><button class="hh" data-open="${hi}" aria-expanded="${o}" aria-label="${esc(h.name)}: ${tot}-mal geschafft, beste Woche ${best[0]} von ${best[1]}"><span class="hht"><span class="ini" style="--c:${hx}">${icoOf(h)}</span><b>${esc(h.name)}</b><small>12 Wochen</small></span><span class="hb" aria-hidden="true"><span class="mo">${mosaic(h)}</span><span class="st"><span><b>${tot}×</b><small>insgesamt</small></span><span><b>${best[1]?best[0]+" / "+best[1]:"–"}</b><small>beste Woche</small></span></span></span></button>${o?(ed&&ed.i===hi?editHtml():weekHtml(h,hi,li,len,start)):""}</div>`;
+  const [tot,best,k]=stats(h),o=openId===h.id,hx=hexOf(h),HR=2*Math.PI*19;
+  const kr=`<span class="hr"><svg width="46" height="46" viewBox="0 0 46 46"><circle class="rt" cx="23" cy="23" r="19"/>${k?`<circle class="rp" cx="23" cy="23" r="19" style="stroke-dasharray:${(k/100*HR).toFixed(1)} ${HR.toFixed(1)}"/>`:""}</svg><b>${k==null?"–":k+"%"}</b></span>`;
+  return `<div class="panel hc" style="--hc:${hx}"><button class="hh" data-open="${hi}" aria-expanded="${o}" aria-label="${esc(h.name)}: Konstanz ${k??0} Prozent, beste Woche ${best[0]} von ${best[1]}, insgesamt ${tot}-mal geschafft"><span class="hht"><span class="ini" style="--c:${hx}">${icoOf(h)}</span><b>${esc(h.name)}</b><small>12 Wochen</small></span><span class="hb" aria-hidden="true"><span class="mo">${mosaic(h)}</span><span class="st"><span>${kr}<small>Konstanz</small></span><span><b>${best[1]?best[0]+" / "+best[1]:"–"}</b><small>beste Woche</small></span></span></span></button>${o?(ed&&ed.i===hi?editHtml():weekHtml(h,hi,li,len,start,tot)):""}</div>`;
 }
 
 function editHtml(){
