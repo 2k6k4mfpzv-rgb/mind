@@ -77,6 +77,9 @@ async function run(){
   t("Tage, die damals nicht geplant waren, zählen nicht als verpasst",()=>{
     const w=E(`wdi(addDays(today,-10))`),h=habit({created:day(-20),settings_log:[{until:day(-7),days:[w],target:1}]});
     return [sched(h,date(-10)),sched(h,date(-11)),sched(h,date(-3))]},[true,false,true]);
+  t("Im Verlauf ist der alte Haken ein voller Punkt, der neue ein Viertel",()=>{
+    const m=E("mosaic")(habit({target:4,created:day(-20),settings_log:old,done:{[day(-10)]:1,[day(-2)]:1}}));
+    return [(m.match(/class="f"/g)||[]).length,(m.match(/--f:0\.25/g)||[]).length]},[1,1]);
   t("Ohne frühere Einstellungen bleibt alles wie bisher",()=>{const h=habit({target:2,created:day(-20),done:{[day(-10)]:1,[day(-9)]:2}});return [ok(h,day(-10)),ok(h,day(-9))]},[false,true]);
   // Bearbeiten wie in der App: Ziel von Wasser (Testdaten: 6×) ändern
   const edit=(i,c)=>E(`(()=>{const h=habits[${i}];ed={i:${i},name:h.name,days:h.days.slice(),cat:h.cat,col:colKey(h),ico:h.icon,tg:h.target,dt:"",tm:"",more:true};Object.assign(ed,${JSON.stringify(c)});saveEdit();return habits[${i}].settings_log})()`);

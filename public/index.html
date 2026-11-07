@@ -376,9 +376,14 @@ const clampT=v=>Math.min(20,Math.max(1,parseInt(v,10)||1));
 const DTRE=/^(morgen|mittag|abend|([01]\d|2[0-3]):[0-5]\d)$/;
 const DT=[["","Keine"],["morgen","Morgen"],["mittag","Mittag"],["abend","Abend"],["zeit","Uhrzeit"]];
 const dtLabel=d=>({morgen:"Morgen",mittag:"Mittag",abend:"Abend"})[d]||(d?d+" Uhr":"");
-const norm=h=>{h.days=Array.isArray(h.days)&&h.days.length?h.days:[0,1,2,3,4,5,6];h.cat=h.cat||"";h.done=h.done&&typeof h.done==="object"?h.done:{};h.created=h.created||Object.keys(h.done).sort()[0]||TI;h.target=clampT(h.target);h.daytime=DTRE.test(h.daytime||"")?h.daytime:"";h.color=HEX[h.color]?h.color:"";h.icon=ICO[h.icon]?h.icon:"";return h};
+const norm=h=>{h.days=Array.isArray(h.days)&&h.days.length?h.days:[0,1,2,3,4,5,6];h.cat=h.cat||"";h.done=h.done&&typeof h.done==="object"?h.done:{};h.created=h.created||Object.keys(h.done).sort()[0]||TI;h.target=clampT(h.target);h.daytime=DTRE.test(h.daytime||"")?h.daytime:"";h.color=HEX[h.color]?h.color:"";h.icon=ICO[h.icon]?h.icon:"";
+  h.settings_log=(Array.isArray(h.settings_log)?h.settings_log:[]).filter(e=>e&&/^\d{4}-\d\d-\d\d$/.test(e.until)&&Array.isArray(e.days)).map(e=>({until:e.until,days:e.days,target:clampT(e.target)})).sort((a,b)=>a.until<b.until?-1:1);return h};
+// Frühere Einstellungen: settings_log = [{until, days, target}], aufsteigend nach Datum. Bis zum Tag "until" (ausschließlich)
+// galten diese Tage und dieses Tagesziel. So zählen alte Haken weiter richtig, wenn man ein Habit später ändert.
+const cfg=(h,k)=>h.settings_log.find(e=>k<e.until)||h; // Einstellungen, die an Tag k galten
+const tg=(h,k)=>cfg(h,k).target; // Tagesziel an Tag k
 const cnt=(h,k)=>+h.done[k]||0; // wie oft an Tag k erledigt
-const ok=(h,k)=>cnt(h,k)>=h.target; // Tagesziel erreicht
+const ok=(h,k)=>cnt(h,k)>=tg(h,k); // Tagesziel erreicht
 const colKey=h=>h.color||COLS[[...String(h.id||h.name)].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7)%COLS.length][0];
 const hexOf=h=>HEX[colKey(h)];
 const nextCol=()=>{const n=k=>habits.filter(h=>colKey(h)===k).length;return COLS.map(c=>c[0]).reduce((a,k)=>n(k)<n(a)?k:a)}; // am wenigsten benutzte Farbe
@@ -393,7 +398,7 @@ function optsHtml(p,t,dt,tm){
 const daytimeOf=(dt,tm)=>{const v=dt==="zeit"?tm:dt;return DTRE.test(v||"")?v:""};
 
 const save=()=>{try{localStorage.setItem(RKEY,JSON.stringify({last:rem.last}))}catch(e){}};
-const sched=(h,d)=>h.days.includes(wdi(d))&&iso(d)>=h.created;
+const sched=(h,d)=>{const k=iso(d);return k>=h.created&&cfg(h,k).days.includes(wdi(d))}; // an Tag d geplant
 
 // Faire Serie: Ein Fehltag pro Woche (Mo bis So) ist ein Puffertag, die Serie pausiert dann nur.
 // Erst ein zweiter Fehltag in derselben Woche beendet sie. Heute zählt erst, wenn geschafft.
@@ -457,7 +462,7 @@ function ring(anim){ // Tagesring: Mehrfach-Habits zählen anteilig
 const M0=addDays(monday(today),-77); // Montag vor 11 Wochen: Das Mosaik zeigt 12 Wochen bis heute
 function mosaic(h){ // Spalte = Woche, Zeile = Wochentag. Jeder der 84 Tage ist ein Punkt, auch vor dem Start und in der Zukunft (dann leer). Teilweise = Punkt füllt sich anteilig.
   let m="";
-  for(let i=0;i<84;i++){const d=addDays(M0,i),f=d>today?0:Math.min(1,cnt(h,iso(d))/h.target);
+  for(let i=0;i<84;i++){const d=addDays(M0,i),k=iso(d),f=d>today?0:Math.min(1,cnt(h,k)/tg(h,k));
     m+=f>=1?'<i class="f"></i>':f>0?`<i class="p" style="--f:${f.toFixed(2)}"></i>`:"<i></i>"}
   return m;
 }
@@ -476,8 +481,8 @@ function weekHtml(h,hi,li,len,start,tot){ // aufgeklappt: Woche zum Nachtragen, 
     const d=addDays(start,i),k=iso(d),lab=`${esc(h.name)}, ${fmt(d,{weekday:"long",day:"numeric",month:"long"})}`;
     x+=`<span class="${k===TI?"t":""}">${DAYS[i]}`;
     if(!sched(h,d)&&!h.done[k])x+='<span class="c off"><i></i></span>';
-    else{const n=cnt(h,k),done=n>=h.target,st=done?"done":d>today?"up":k===TI?"due":"miss";
-      x+=`<button class="c ${st}${n&&!done?" part":""}" ${d>today?"disabled":""} data-h="${hi}" data-k="${k}" aria-pressed="${done}" aria-label="${lab}${h.target>1?`, ${n} von ${h.target}`:""}">${done?CHECK:n?`<b>${n}</b>`:""}</button>`}
+    else{const n=cnt(h,k),t=tg(h,k),done=n>=t,st=done?"done":d>today?"up":k===TI?"due":"miss";
+      x+=`<button class="c ${st}${n&&!done?" part":""}" ${d>today?"disabled":""} data-h="${hi}" data-k="${k}" aria-pressed="${done}" aria-label="${lab}${t>1?`, ${n} von ${t}`:""}">${done?CHECK:n?`<b>${n}</b>`:""}</button>`}
     x+="</span>";
   }
   return x+`</div><p class="meta">Insgesamt ${tot}× geschafft · Serie ${s} ${s===1?"Tag":"Tage"}${h.target>1?" · "+h.target+"× täglich":""}${h.daytime?" · "+esc(dtLabel(h.daytime)):""}${h.cat?" · "+esc(h.cat):""}</p><div class="acts"><button data-up="${hi}" aria-label="${esc(h.name)} nach oben"${li===0?" disabled":""}>↑</button><button data-down="${hi}" aria-label="${esc(h.name)} nach unten"${li===len-1?" disabled":""}>↓</button><button data-edit="${hi}">Bearbeiten</button><button data-del="${hi}"${pend===hi?' class="warn"':""}>${pend===hi?"Wirklich löschen?":"Löschen"}</button></div></div>`;
@@ -542,7 +547,7 @@ $("grid").addEventListener("click",e=>{
   if(b.dataset.save!==undefined){saveEdit();return}
   if(b.dataset.del!==undefined){const i=+b.dataset.del;if(pend===i){pend=-1;ed=null;const id=habits[i].id;habits.splice(i,1);db.from("habits").delete().eq("id",id).then(chk)}else pend=i;render();return}
   // Tippen zählt +1, bei erreichtem Ziel zurück auf 0 (Ziel 1 = an/aus wie bisher)
-  if(b.dataset.k){pend=-1;const h=habits[+b.dataset.h],k=b.dataset.k,n=cnt(h,k);n>=h.target?delete h.done[k]:h.done[k]=n+1;render();db.from("habits").update({done:h.done}).eq("id",h.id).then(chk)}
+  if(b.dataset.k){pend=-1;const h=habits[+b.dataset.h],k=b.dataset.k,n=cnt(h,k);n>=tg(h,k)?delete h.done[k]:h.done[k]=n+1;render();db.from("habits").update({done:h.done}).eq("id",h.id).then(chk)}
 });
 $("grid").addEventListener("input",e=>{if(!ed)return;const t=e.target.id,v=e.target.value;if(t==="en")ed.name=v;if(t==="ec")ed.cat=v;if(t==="etg")ed.tg=v;if(t==="edt")ed.dt=v;if(t==="etm")ed.tm=v});
 $("grid").addEventListener("toggle",e=>{if(ed&&e.target.classList.contains("more"))ed.more=e.target.open},true);
@@ -553,8 +558,14 @@ function saveEdit(){
   if(!name){$("err").textContent="Der Name darf nicht leer sein.";return}
   if(!ed.days.length){$("err").textContent="Wähle mindestens einen Tag.";return}
   const h=habits[ed.i],upd={name,days:ed.days.slice().sort(),cat:ed.cat.trim(),color:ed.col,icon:ed.ico,target:clampT(ed.tg),daytime:daytimeOf(ed.dt,ed.tm)};
-  Object.assign(h,upd);ed=null;$("err").textContent="";render();
+  logChange(h,upd);Object.assign(h,upd);ed=null;$("err").textContent="";render();
   db.from("habits").update(upd).eq("id",h.id).then(chk);
+}
+// Ändern sich Tage oder Tagesziel, gelten die alten Einstellungen weiter für alle Tage bis gestern.
+// Wurde heute schon geändert, sind die Einstellungen von vor heute bereits gemerkt.
+function logChange(h,upd){
+  if(upd.target===h.target&&upd.days.join()===h.days.join()||h.created>=TI||h.settings_log.some(e=>e.until===TI))return;
+  upd.settings_log=h.settings_log.concat({until:TI,days:h.days.slice(),target:h.target});
 }
 function move(i,dir){
   const vis=habits.map((h,k)=>k).filter(k=>!filter||habits[k].cat===filter);
@@ -649,7 +660,7 @@ $("imp").onclick=async()=>{
   try{
     const o=JSON.parse($("data").value);if(!Array.isArray(o.habits))throw 0;
 
-    const rows=o.habits.map((h,k)=>{const n=norm({name:String(h.name||"Habit"),days:h.days,cat:String(h.cat||""),created:h.created,done:h.done,target:h.target,daytime:h.daytime,color:h.color,icon:h.icon});return{name:n.name,days:n.days,cat:n.cat,created:n.created,done:n.done,pos:k+1,target:n.target,daytime:n.daytime,color:n.color,icon:n.icon}});await db.from("habits").delete().not("id","is",null);const r=await db.from("habits").insert(rows).select();chk(r);habits=(r.data||[]).map(norm);
+    const rows=o.habits.map((h,k)=>{const n=norm({name:String(h.name||"Habit"),days:h.days,cat:String(h.cat||""),created:h.created,done:h.done,target:h.target,daytime:h.daytime,color:h.color,icon:h.icon,settings_log:h.settings_log});return{name:n.name,days:n.days,cat:n.cat,created:n.created,done:n.done,pos:k+1,target:n.target,daytime:n.daytime,color:n.color,icon:n.icon,settings_log:n.settings_log}});await db.from("habits").delete().not("id","is",null);const r=await db.from("habits").insert(rows).select();chk(r);habits=(r.data||[]).map(norm);
     if(o.rem&&HM.test(o.rem.time||"")){rem.on=!!o.rem.on;rem.time=o.rem.time;updProf({rem_on:rem.on,rem_time:rem.time})}
     $("remOn").checked=rem.on;$("remTime").value=rem.time;permUi();
     render();$("imp").textContent="Importiert";setTimeout(()=>$("imp").textContent="Importieren",1500);
