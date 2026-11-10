@@ -2,6 +2,7 @@
 // Wird von tests/logik.html und tests/app.html statt der echten Supabase geladen.
 // Sie kennt dieselben Tabellen und Funktionen wie die echte: habits, profiles, checkins,
 // checkin_add / checkin_set / checkins_map (siehe docs/2026-11-10_checkins.sql) und Realtime.
+// Seit Puls 2 und 3 auch die Spalten unit, unit_pl, paused (habits) und theme, days_total (profiles).
 // Steuerung für Tests: window.MOCK (Daten und Helfer), MOCK_FAIL (kein Netz), MOCK_LOGGED_OUT (abgemeldet), MOCK_LOG (alle Anfragen).
 (function(){
 const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -10,10 +11,10 @@ const add=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
 const wdi=d=>(d.getDay()+6)%7;
 let s=7;const rnd=()=>(s=(s*9301+49297)%233280)/233280;
 const ALL=[0,1,2,3,4,5,6];
-// 9 erfundene Habits: Name, Tage, Kategorie, Tagesziel, Tageszeit, Quote, heute schon erledigt, Farbe, Symbol
+// 9 erfundene Habits: Name, Tage, Kategorie, Tagesziel, Tageszeit, Quote, heute schon erledigt, Farbe, Symbol, Einheit, Mehrzahl
 const H=[
- ["Wasser",ALL,"",6,"morgen",.75,3,"himmel","tropfen"],
- ["Meditieren",ALL,"Kopf",1,"morgen",.85,1,"salbei","blatt"],
+ ["Wasser",ALL,"",6,"morgen",.75,3,"himmel","tropfen","Glas","Gläser"],
+ ["Meditieren",ALL,"Kopf",1,"morgen",.85,1,"salbei","blatt","5 Minuten"],
  ["10 Seiten lesen",ALL,"",1,"abend",.6,0,"lavendel","buch"],
  ["Gym",[0,2,4,5],"Sport",1,"",.7,0,"apricot","hantel"],
  ["Vitamin D",ALL,"",1,"08:00",.9,1,"sonne","sonne"],
@@ -23,22 +24,23 @@ const H=[
  ["Zimmer aufräumen",[5],"",1,"",.5,0,"",""]
 ];
 const habits=[],checkins=[];
-H.forEach(([name,days,cat,target,daytime,rate,todayN,color,icon],i)=>{
+H.forEach(([name,days,cat,target,daytime,rate,todayN,color,icon,unit="",unit_pl=""],i)=>{
   const created=iso(add(T0,-110)),done={};
   for(let k=110;k>=1;k--){const d=add(T0,-k);if(!days.includes(wdi(d)))continue;const r=rnd();if(r<rate)done[iso(d)]=target;else if(target>1&&r<rate+.15)done[iso(d)]=1+Math.floor(rnd()*(target-1))}
   if(todayN)done[iso(T0)]=todayN;
   const id="h"+(i+1)+"-"+Math.random().toString(36).slice(2,8);
-  habits.push({id,user_id:"u1",name,days,cat,created,pos:i+1,target,daytime,color,icon,settings_log:[],created_at:new Date(Date.now()-1e8+i*1000).toISOString()});
+  habits.push({id,user_id:"u1",name,days,cat,created,pos:i+1,target,daytime,color,icon,settings_log:[],unit,unit_pl,paused:[],created_at:new Date(Date.now()-1e8+i*1000).toISOString()});
   for(const day in done)checkins.push({habit_id:id,user_id:"u1",day,count:done[day]});
 });
 const listeners=[]; // Realtime: wer bei Änderungen an checkins Bescheid bekommt
 const row=(id,day)=>store.checkins.find(c=>c.habit_id===id&&c.day===day);
 function setCount(id,day,n){let c=row(id,day);if(!c){c={habit_id:id,user_id:"u1",day,count:0};store.checkins.push(c)}c.count=n;listeners.forEach(cb=>cb({eventType:"UPDATE",new:{...c}}));return n}
-const store=window.MOCK={habits,checkins,profiles:[{id:"u1",name:"Paul",timezone:"Europe/Berlin",plan:"free",rem_on:false,rem_time:"20:00",created_at:new Date().toISOString()}],
+const store=window.MOCK={habits,checkins,profiles:[{id:"u1",name:"Paul",timezone:"Europe/Berlin",plan:"free",rem_on:false,rem_time:"20:00",theme:"",days_total:0,created_at:new Date().toISOString()}],
   count:(id,day)=>(row(id,day)||{count:0}).count,  // so viele Haken stehen in der "Datenbank"
   other:(id,day,n)=>setCount(id,day,n)};            // ein anderes Gerät setzt die Anzahl
 window.MOCK_LOG=[];
-const COLS=new Set(["id","user_id","name","days","cat","created","pos","target","daytime","color","icon","settings_log","created_at"]);
+const COLS=new Set(["id","user_id","name","days","cat","created","pos","target","daytime","color","icon","settings_log","unit","unit_pl","paused","created_at"]);
+const PROF=new Set(["name","timezone","rem_on","rem_time","theme","days_total"]); // nur diese Spalten darf die App im Profil ändern
 const OKICO=['','tropfen','blatt','buch','hantel','puls','sonne','mond','stift','herz','apfel','pille','note','sprache','hut','haus','handy'];
 const OKCOL=["","himmel","salbei","lavendel","apricot","sonne","rose","petrol","koralle"];
 const cp=o=>JSON.parse(JSON.stringify(o));
@@ -46,14 +48,22 @@ const NONET={data:null,error:{message:"TypeError: Failed to fetch"}},RLS={data:n
 const later=fn=>({then(res,rej){return new Promise(r=>setTimeout(r,60)).then(fn).then(res,rej)}}); // wie das Netz: Antwort nach 60 ms
 function check(t,o){
   if(t==="checkins")return store.habits.some(h=>h.id===o.habit_id)&&o.count>=0&&o.count<=20?null:RLS.error;
+  if(t==="profiles"){
+    for(const k in o)if(!PROF.has(k))return{message:"permission denied for table profiles"};
+    if(o.theme!==undefined&&!/^[a-z]{0,20}$/.test(o.theme))return{message:'new row violates check constraint "profiles_theme_valid"'};
+    if(o.days_total!==undefined&&!(o.days_total>=0))return{message:'new row violates check constraint "profiles_days_total_valid"'};
+    return null;
+  }
   if(t!=="habits")return null;
   for(const k in o)if(!COLS.has(k)||(k==="color"&&window.MOCK_NO_COLOR))return{message:`Could not find the '${k}' column of 'habits' in the schema cache`};
   if(o.color!==undefined&&!OKCOL.includes(o.color))return{message:'new row violates check constraint "habits_color_valid"'};
   if(o.icon!==undefined&&!OKICO.includes(o.icon))return{message:'new row violates check constraint "habits_icon_valid"'};
   if(o.settings_log!==undefined&&!Array.isArray(o.settings_log))return{message:'new row violates check constraint "habits_settings_log_valid"'};
+  if(o.paused!==undefined&&!Array.isArray(o.paused))return{message:'new row violates check constraint "habits_paused_valid"'};
+  if((o.unit||"").length>20||(o.unit_pl||"").length>20)return{message:'new row violates check constraint "habits_unit_len"'};
   return null;
 }
-const DEF={habits:()=>({id:"n-"+Math.random().toString(36).slice(2,10),user_id:"u1",cat:"",days:ALL,pos:0,target:1,daytime:"",color:"",icon:"",settings_log:[],created_at:new Date().toISOString()}),checkins:()=>({user_id:"u1",count:0})};
+const DEF={habits:()=>({id:"n-"+Math.random().toString(36).slice(2,10),user_id:"u1",cat:"",days:ALL,pos:0,target:1,daytime:"",color:"",icon:"",settings_log:[],unit:"",unit_pl:"",paused:[],created_at:new Date().toISOString()}),checkins:()=>({user_id:"u1",count:0})};
 function exec(q){
   if(window.MOCK_FAIL)return NONET;
   const rows=store[q.t],m=r=>q.f.every(f=>f(r));
