@@ -1,6 +1,6 @@
 # MIND – Roadmap
 
-Stand: 07.11.2026. Reihenfolge: erst Funktionen, Oberfläche und Struktur (Phase A), dann für andere öffnen (Phase B).
+Stand: 10.11.2026. Reihenfolge: erst Funktionen, Oberfläche und Struktur (Phase A), dann für andere öffnen (Phase B).
 
 ## Grundregeln
 1. **Alles Zusätzliche ist optional.** Ein Habit besteht im Minimum nur aus einem Namen. Zeiten, Mehrfach-Ziele, Kategorie und Erinnerung sind ausgeklappte Zusatzoptionen und standardmäßig aus. Neue Datenbank-Felder bekommen immer einen Standardwert, der dem heutigen Verhalten entspricht.
@@ -23,9 +23,9 @@ Stand: 07.11.2026. Reihenfolge: erst Funktionen, Oberfläche und Struktur (Phase
   - [x] Tageszeit (Morgen, Mittag, Abend oder Uhrzeit), Standard keine
 - [x] **A3 Profil und Einstellungen:** Tabelle `profiles` (Name, Zeitzone, `plan`), Seite „Einstellungen", Erinnerung wandert von localStorage in die Datenbank
 - [ ] **A4 Bessere Benachrichtigungen:** Prüfen, was geht (installierbare Web-App, Push, E-Mail). Entscheidung vorher.
-  - [ ] Mitentscheiden (aus dem Review vom 07.11.2026): Haken auf mehreren Geräten gleichzeitig sauber speichern (der Server zählt hoch, statt dass die App die ganze Liste schickt). Nötig, sobald man aus einer Benachrichtigung heraus abhaken kann, sonst spätestens vor dem Launch.
+  - [ ] Mitentscheiden (aus dem Review vom 07.11.2026): Haken auf mehreren Geräten gleichzeitig sauber speichern (der Server zählt hoch, statt dass die App die ganze Liste schickt). Nötig, sobald man aus einer Benachrichtigung heraus abhaken kann, sonst spätestens vor dem Launch. **Gebaut am 10.11.2026 im Paket „Fundament“ (Tabelle `checkins`, Pull Request offen), Haken setzt Paul nach seinem Test.**
 - [ ] **A5 Integrierte KI:** Schlüssel nur auf dem Server (Supabase-Funktion), Limit pro Nutzer, Kosten im Blick
-  - [ ] Vorher (aus dem Review vom 07.11.2026): `public/index.html` in Dateien aufteilen (Aussehen, Logik, Oberfläche), weil A5 viel Code dazubringt
+  - [ ] Vorher (aus dem Review vom 07.11.2026): `public/index.html` in Dateien aufteilen (Aussehen, Logik, Oberfläche), weil A5 viel Code dazubringt. **Gebaut am 10.11.2026 im Paket „Fundament“ (`css/`, `js/` als Module), Haken setzt Paul nach seinem Test.**
   - [ ] MIND-Knopf in der Mitte der Tab-Leiste (dann Heute, Verlauf, MIND, Sammlung, Ich). Öffnet den Chat als Blatt von unten mit Vorschlägen („Woche besprechen“, „Neues Habit planen“). Vorschläge übernimmt man mit „Übernehmen“ oder „Anpassen“
   - [ ] KI-Einstiege: „Mini-Version vorschlagen“ im Menü der Kachel, „Woche besprechen“ oben im Verlauf, „Muster erklären“ pro Habit, „Hilf mir formulieren“ beim neuen Habit
   - [ ] Pro-Stil: dunkle Pro-Fläche, Funke in Koralle, kleine Plakette „PRO“ (nie laut, kein Schloss, nichts ausgegraut)
