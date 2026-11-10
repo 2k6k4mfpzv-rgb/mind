@@ -1,0 +1,194 @@
+/* MIND – Bausteine und Ansichten (Heute, Verlauf, Ich, Blätter). Werte kommen aus tokens.css.
+   Die Reihenfolge der Regeln ist wichtig (spätere Regeln überschreiben frühere), nicht umsortieren. */
+/* Symbole (Linien-Icons) */
+.ini svg,.icos svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* Heute: Kopf mit Tagesring */
+.top{display:flex;justify-content:space-between;align-items:center;gap:var(--sp-4)}
+.top .sub{margin:0}
+.ring{position:relative;width:72px;height:72px;flex:none}
+.ring svg{display:block;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:9}
+.ring .rt{stroke:var(--cell)}
+.ring .rp{stroke:var(--acc);stroke-linecap:round;transition:stroke-dasharray var(--t-ring) var(--ease)}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:.95rem;font-weight:800;font-variant-numeric:tabular-nums}
+.ring.pop{animation:pop var(--t-pop) ease}
+@keyframes pop{40%{transform:scale(1.1)}}
+.cheer{margin:8px 0 0;font-weight:700;color:var(--accT)}
+.cheer:empty{display:none}
+.dchips{display:flex;gap:var(--sp-2);flex-wrap:wrap;margin-top:18px}
+.dchips:empty{display:none}
+.dchips button{min-height:36px;padding:0 16px;border-radius:var(--r-pill);background:var(--cell);color:var(--mute);font-size:.86rem;font-weight:600}
+.dchips button.on{background:var(--ink);color:var(--bg)}
+/* Heute: Kacheln. Die Füllung wächst von unten (--p = 0 bis 1). Der Inhalt liegt zweimal übereinander:
+   normal oben, dunkel auf der Füllung. So bleibt die Schrift auf jeder Farbe lesbar. */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--sp-3);margin-top:16px}
+.tiles .empty{grid-column:1/-1;border:0;padding:4px 0}
+.tile{position:relative;height:116px;border-radius:var(--r-tile);background:var(--cell);overflow:hidden;text-align:left;isolation:isolate;transition:transform var(--t-press)}
+.tile:active{transform:scale(.97)}
+.tile .fill{position:absolute;inset:0;background:var(--c);transform-origin:bottom;transform:scaleY(var(--p));transition:transform var(--t-fill) var(--ease)}
+.tile .tc{position:absolute;inset:0;padding:13px 14px;display:flex;flex-direction:column;justify-content:space-between;-webkit-clip-path:inset(0 0 calc(var(--p)*100%) 0);clip-path:inset(0 0 calc(var(--p)*100%) 0);transition:clip-path var(--t-fill) var(--ease),-webkit-clip-path var(--t-fill) var(--ease)}
+.tile .tc.on{color:var(--dark);-webkit-clip-path:inset(calc(100% - var(--p)*100%) 0 0 0);clip-path:inset(calc(100% - var(--p)*100%) 0 0 0)}
+.tr{display:flex;justify-content:space-between;align-items:flex-start}
+.ini{width:34px;height:34px;border-radius:var(--r-ico);background:var(--c);color:var(--dark);display:grid;place-items:center;font-weight:800;font-size:.95rem;flex:none}
+.tc.on .ini{background:var(--veil)}
+.cnt{font-size:1.25rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.2}
+.ok{width:28px;height:28px;border-radius:50%;background:var(--dark);color:var(--c);display:grid;place-items:center}
+.bot{min-width:0}
+.bot b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;font-size:.95rem;line-height:1.25;font-weight:700;letter-spacing:-.01em;overflow:hidden;overflow-wrap:anywhere}
+.bot small{display:block;font-size:.78rem;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tc.on small{color:var(--dark)}
+.tile.add{background:none;border:1.5px dashed var(--line2)}
+.tile.add .ini{background:var(--acc)}
+.tile.add .ini svg{stroke-width:2.4} /* Plus als Zeichnung statt Textzeichen, damit es genau in der Mitte sitzt */
+.kc{margin-top:14px;padding:13px 16px;display:flex;justify-content:space-between;align-items:center;gap:var(--sp-3)}
+.kc small{display:block;font-size:.78rem;color:var(--mute)}
+.kc b{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.pill{font-size:.78rem;font-weight:600;color:var(--accT);background:var(--cell);background:color-mix(in srgb,var(--acc) 14%,transparent);padding:6px 12px;border-radius:var(--r-pill);text-align:right;line-height:1.35}
+.ok svg,.c svg,.cols svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+
+/* Tab-Leiste unten. Später kommt der MIND-Knopf (A5) als eigener Knopf in die Mitte, die Leiste verteilt die Knöpfe von selbst. */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:var(--z-tabs);display:flex;justify-content:center;background:var(--bg);border-top:1px solid var(--line);padding:6px 10px calc(6px + env(safe-area-inset-bottom,0px))}
+.tabs button{flex:0 1 150px;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--mute);font-size:.7rem;font-weight:600}
+.tabs button[aria-current="page"]{color:var(--accT)}
+.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* Rückgängig: kurzer Hinweis über der Tab-Leiste, wenn ein Tipp ein Mehrfach-Habit auf 0 gesetzt hat (kein Popup) */
+.undo{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:var(--z-toast);display:flex;align-items:center;gap:var(--sp-3);width:max-content;max-width:calc(100% - 32px);padding:6px 6px 6px 16px;border-radius:var(--r-toast);background:var(--ink);color:var(--bg);font-size:.88rem;font-weight:600;box-shadow:var(--shadow-toast)}
+.undo:empty{display:none}
+.undo span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.undo button{flex:none;min-height:40px;padding:0 14px;border-radius:var(--r-cell);background:var(--shade);font-weight:800}
+
+/* Neues Habit: Blatt von unten (am Mac in der Mitte) */
+dialog.sheet{position:fixed;inset:auto 0 0;margin:0 auto;width:100%;max-width:560px;max-height:92vh;padding:0;border:0;border-radius:var(--r-sheet) var(--r-sheet) 0 0;background:var(--panel);color:var(--ink);overflow:auto;overscroll-behavior:contain}
+dialog.sheet::backdrop{background:rgba(20,19,25,.45)} /* fester Wert: ::backdrop kennt die Tokens in älteren Browsern nicht */
+dialog.sheet[open]{animation:up var(--t-sheet) var(--ease)}
+@keyframes up{from{transform:translateY(32px);opacity:0}}
+.shi{padding:10px 22px calc(24px + env(safe-area-inset-bottom,0px))}
+.grab{display:block;width:40px;height:5px;border-radius:3px;background:var(--mute);opacity:.35;margin:0 auto 10px}
+.shh{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.shh b{font-size:1.25rem;font-weight:800;letter-spacing:-.02em}
+#shx{padding:8px 4px}
+@media (min-width:820px){dialog.sheet{inset:0;margin:auto;height:fit-content;border-radius:var(--r-sheet)}.grab{display:none}.shi{padding-top:22px}}
+
+/* Verlauf: pro Habit eine Karte mit Mosaik der letzten 12 Wochen. Antippen klappt sie auf (Woche nachtragen, bearbeiten). */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{padding:3px 12px;border-radius:var(--r-pill);background:var(--cell);font-size:.8rem;font-weight:600;color:var(--mute)}
+.chip.on{background:var(--ink);color:var(--bg)}
+.hcs{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:var(--sp-3);align-items:start}
+.hcs .empty{grid-column:1/-1;border:0;padding:4px 0}
+.hh{display:block;width:100%;text-align:left;padding:14px 16px 16px}
+.hht{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.hht .ini{width:30px;height:30px;border-radius:10px;font-size:.85rem}
+.hht .ini svg{width:17px;height:17px}
+.hht b{flex:1;min-width:0;font-size:1rem;line-height:1.25;font-weight:700;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere} /* lange Namen bekommen zwei Zeilen */
+.hb{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--sp-4)}
+/* Mosaik aus Punkten: immer das volle Raster (12 Wochen x 7 Tage), so breit wie Platz ist. Leer = grauer Punkt,
+   voll = geschafft, teilweise geschafft füllt sich von unten wie die Kacheln (--f = 0 bis 1) */
+.mo{flex:1;min-width:0;max-width:300px;display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(7,auto);grid-auto-flow:column;gap:var(--sp-1)}
+.mo i{aspect-ratio:1;border-radius:50%;background:var(--moo)} /* im Dunkeln etwas heller als die Karte */
+.mo i.p{background:linear-gradient(to top,var(--hc) calc(var(--f)*100%),var(--moo) calc(var(--f)*100%))}
+.mo i.f{background:var(--hc)}
+.mo i.t{box-shadow:0 0 0 2px var(--panel),0 0 0 3.5px var(--mute)} /* heute: feiner Ring zur Orientierung */
+.st{display:grid;gap:var(--sp-1);justify-items:center;flex:none}
+.st small{display:block;font-size:.72rem;color:var(--mute)}
+/* Konstanz-Ring pro Habit (wie der Tagesring auf Heute, in der Habit-Farbe) */
+.hr{display:block;position:relative;width:54px;height:54px}
+.hr svg{display:block;transform:rotate(-90deg)}
+.hr circle{fill:none;stroke-width:6}
+.hr .rt{stroke:var(--moo)}
+.hr .rp{stroke:var(--hc);stroke-linecap:round}
+.hr b{position:absolute;inset:0;display:grid;place-items:center;font-size:.8rem;font-weight:800;font-variant-numeric:tabular-nums}
+.wk{padding:12px 16px 16px;border-top:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.ic{width:36px;height:36px;border-radius:50%;color:var(--mute);font-size:1.3rem}
+.ic:hover{background:var(--cell);color:var(--ink)}
+.ic:disabled{opacity:.3;cursor:default}.ic:disabled:hover{background:none;color:var(--mute)}
+.wkd{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--sp-1);text-align:center}
+.wkd>span{display:grid;justify-items:center;gap:var(--sp-1);font-size:.75rem;color:var(--mute)}
+.wkd>span.t{color:var(--accT);font-weight:700}
+.meta{margin:12px 0 10px;font-size:.8rem;color:var(--mute)}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.acts button{min-height:36px;min-width:36px;padding:0 14px;border-radius:var(--r-pill);background:var(--cell);font-size:.85rem;font-weight:600}
+.acts button:disabled{opacity:.35;cursor:default}
+.acts .warn{color:var(--accT)}
+.edit{padding:14px 16px 16px;border-top:1px solid var(--line);display:grid;gap:10px}
+.del{color:var(--mute);font-size:.76rem;padding:0 4px}
+.del:hover{color:var(--ink)}
+/* Kein Rot, kein X: Ein Tag ohne Haken ist ein ruhiges leeres Feld */
+.c{width:36px;height:36px;border-radius:var(--r-cell);display:grid;place-items:center;background:var(--cell);color:var(--dark)}
+.c.done{background:var(--hc,var(--acc))}
+.c.part{background:color-mix(in srgb,var(--hc) 38%,var(--cell))}
+.c.due{background:none;box-shadow:inset 0 0 0 2px var(--acc)}
+.c.due.part{background:color-mix(in srgb,var(--hc) 38%,var(--cell))}
+.c.up{background:none;box-shadow:inset 0 0 0 1.5px var(--line2);cursor:default}
+.c.off{background:none;cursor:default}
+.c.off i{width:4px;height:4px;border-radius:50%;background:var(--mute)}
+.c b{font-size:.85rem;font-weight:700;color:var(--ink)}
+.ovw{margin-top:14px;display:grid;grid-template-columns:320px 1fr}
+.ovk,.ovm{padding:24px 28px}
+.ovm{border-left:1px solid var(--line)}
+.k{padding:18px 0;border-bottom:1px solid var(--line)}
+.k span{color:var(--mute);font-size:.9rem}
+.k b{display:block;font-size:2.2rem;font-weight:800;letter-spacing:-.03em;line-height:1.15;font-variant-numeric:tabular-nums}
+.k b em{font-style:normal;font-size:1rem;font-weight:500;color:var(--mute);margin-left:6px;letter-spacing:0}
+.k div{height:8px;border-radius:var(--r-pill);background:var(--cell);margin-top:10px;overflow:hidden}
+.k div i{display:block;height:100%;border-radius:var(--r-pill);background:var(--acc)}
+.wd{display:flex;gap:clamp(8px,3vw,28px);margin-top:22px}
+.wd div{flex:1;font-size:.85rem;color:var(--mute)}
+.wd b{display:block;font-size:1.3rem;font-weight:800;color:var(--ink);margin-bottom:10px;font-variant-numeric:tabular-nums}
+.wd b em{font-style:normal;font-size:.7rem;color:var(--mute)}
+.wd p{margin:0 0 5px;display:flex;flex-direction:column;gap:5px}
+.wd p i{width:100%;max-width:24px;aspect-ratio:1;border-radius:50%;background:var(--cell)}
+.wd p i.f{background:var(--acc)}
+
+/* Formulare */
+form.add{display:grid;gap:var(--sp-3)}
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,40px));gap:6px}
+.days button{aspect-ratio:1;border-radius:50%;background:var(--cell);color:var(--mute);font-size:.85rem;font-weight:700}
+.days button.on{background:var(--ink);color:var(--bg)}
+.flab{display:grid;gap:6px;font-size:.8rem;color:var(--mute)}
+.cols{display:grid;grid-template-columns:repeat(8,minmax(0,40px));gap:var(--sp-2)}
+.cols button{aspect-ratio:1;border-radius:var(--r-ico);background:var(--c);color:var(--dark);display:grid;place-items:center}
+.cols button[aria-checked="true"]{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--ink)}
+.icos{display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:6px}
+.icos button{aspect-ratio:1;border-radius:var(--r-ico);background:var(--cell);color:var(--ink);display:grid;place-items:center;font-size:.8rem;font-weight:800}
+.icos button[aria-checked="true"]{background:var(--c);color:var(--dark)}
+.btn{background:var(--acc);color:var(--dark);border-radius:var(--r-pill);padding:11px 22px;font-weight:700}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line2);font-weight:600}
+.set{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+details.more{margin:0;border:0;padding:0}
+details.more summary{font-size:.9rem}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.opts label{display:grid;gap:var(--sp-1);font-size:.8rem;color:var(--mute)}
+.opts .full{grid-column:1/-1}
+@media (max-width:820px){.ovw{grid-template-columns:1fr}.ovm{border-left:0;border-top:1px solid var(--line)}.ovk,.ovm,.ph{padding-left:18px;padding-right:18px}.wd b{font-size:clamp(.8rem,3.4vw,1.3rem)}}
+/* Ich: Einstellungen als Liste (Bezeichnung links, Feld rechts), ruhiger Stil aus A3 */
+.ph{display:flex;justify-content:space-between;gap:var(--sp-3);padding:18px 28px;border-bottom:1px solid var(--line)}
+.sg{padding:22px 28px 14px}
+.sg+.sg{border-top:1px solid var(--line)}
+.sg>.cap{margin-bottom:4px}
+.sr{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);min-height:58px;padding:10px 0}
+.sr+.sr{border-top:1px solid var(--line)}
+.sr>span:first-child{min-width:0}
+.sr small{display:block;color:var(--mute);font-size:.78rem;line-height:1.3;overflow:hidden;text-overflow:ellipsis}
+.sr input:not(.sw),.sr select{width:min(260px,58%);flex:none}
+.sr input[type=time]{width:auto}
+.sr input#pname{text-align:right}
+.sr select{appearance:none;-webkit-appearance:none;padding-right:34px;background-color:var(--cell);background-image:linear-gradient(45deg,transparent 50%,var(--mute) 50%),linear-gradient(135deg,var(--mute) 50%,transparent 50%);background-position:calc(100% - 19px) 52%,calc(100% - 14px) 52%;background-size:5px 5px;background-repeat:no-repeat;cursor:pointer}
+.sr input:disabled{opacity:.4}
+.sw{appearance:none;-webkit-appearance:none;flex:none;width:46px;height:28px;margin:0;padding:0;border-radius:var(--r-pill);border:1px solid var(--line2);background:var(--cell);position:relative;cursor:pointer;transition:background var(--t-switch),border-color var(--t-switch)}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--mute);transition:transform var(--t-switch),background var(--t-switch)}
+.sw:checked{background:var(--acc);border-color:var(--acc)}
+.sw:checked::after{transform:translateX(18px);background:var(--knob)}
+.badge{padding:3px 12px;border-radius:var(--r-pill);background:var(--cell);font-size:.8rem;font-weight:600}
+.btn.sm{padding:8px 16px;font-size:.88rem;flex:none}
+.sg .note{margin:2px 0 8px}
+#remPerm{padding:0 0 8px;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.saved{margin-right:14px;opacity:0;transition:opacity var(--t-fade)}.saved.on{opacity:1}
+details.restore{margin:0;padding:14px 0 6px;border-top:1px solid var(--line)}
+details.restore summary{font-size:.95rem}
+details.restore .note{margin:12px 0 10px}
+@media (max-width:820px){.sg{padding-left:18px;padding-right:18px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+#login{max-width:380px;margin:12vh auto;padding:0 20px}#login form{display:grid;gap:10px}#login h1{font-size:3rem;margin-bottom:28px}

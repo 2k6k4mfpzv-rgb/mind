@@ -1,0 +1,35 @@
+/* MIND – Design-Tokens: alle Werte, die das Aussehen bestimmen, an einer Stelle.
+   Wer Farben, Rundungen, Abstände oder Animationen ändern will, ändert sie hier und nirgends sonst.
+   Dunkel ist der Standard, hell folgt dem Gerät. data-theme="light" oder "dark" am <html> erzwingt eins von beiden
+   (Platz für Themes aus der Sammlung, Puls Schritt 3). */
+:root{
+  /* Farben. --panel Karten, --cell Kacheln und Felder, --moo leere Punkte im Mosaik,
+     --acc Koralle (Ring, Hauptknopf), --accT Koralle als Text, --dark Tinte auf farbigen Flächen */
+  --bg:#141319;--panel:#1D1C24;--ink:#F4F2F8;--mute:#A19DAD;--line:#2A2933;--line2:#3A3944;--cell:#24232D;--moo:#34333F;--hi:#F4F2F8;--on:#141319;--acc:#FF7A59;--accT:#FF7A59;--dark:#1B1A21;
+  color-scheme:dark;
+  --veil:rgba(255,255,255,.45);   /* Symbol-Feld auf einer gefüllten Kachel */
+  --shade:rgba(127,127,127,.25);  /* Knopf im Rückgängig-Hinweis */
+  --knob:#fff;                    /* Knopf im Schalter, wenn an */
+
+  /* Schrift */
+  --font:"Plus Jakarta Sans",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,Menlo,monospace;
+
+  /* Abstände (4er-Raster) */
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;
+
+  /* Rundungen */
+  --r-pill:99px;--r-sheet:28px;--r-tile:24px;--r-panel:22px;--r-toast:16px;--r-field:14px;--r-ico:12px;--r-cell:11px;
+
+  /* Schatten */
+  --shadow-toast:0 6px 24px rgba(0,0,0,.2);
+
+  /* Bewegung: eine Kurve, wenige Dauern (Paket 4 baut die Animationen darauf auf) */
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --t-press:.15s;--t-switch:.2s;--t-sheet:.28s;--t-fade:.3s;--t-fill:.35s;--t-ring:.5s;--t-pop:.6s;
+
+  /* Ebenen */
+  --z-tabs:5;--z-toast:6;
+}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#FAF8F5;--panel:#FFFFFF;--ink:#1B1A21;--mute:#6B6876;--line:#ECE9F0;--line2:#D9D5DF;--cell:#F0EDF2;--moo:#F0EDF2;--hi:#1B1A21;--on:#FAF8F5;--acc:#F26B4F;--accT:#C2401E;color-scheme:light}}
+:root[data-theme="light"]{--bg:#FAF8F5;--panel:#FFFFFF;--ink:#1B1A21;--mute:#6B6876;--line:#ECE9F0;--line2:#D9D5DF;--cell:#F0EDF2;--moo:#F0EDF2;--hi:#1B1A21;--on:#FAF8F5;--acc:#F26B4F;--accT:#C2401E;color-scheme:light}
