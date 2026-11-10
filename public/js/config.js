@@ -9,6 +9,9 @@ export const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 export const TARGET_MAX=20; // höchstes Tagesziel, gleiche Grenze wie in der Datenbank
 
 export const RKEY="habits-rem"; // localStorage: an welchem Tag dieses Gerät schon erinnert hat
+export const TKEY="mind-theme"; // localStorage: gewähltes Theme, damit die Seite gleich in der richtigen Farbe startet (auch in index.html)
+export const SKEY="mind-seen";  // localStorage: bis zu wie vielen Tagen dieses Gerät die Sammlung schon gesehen hat
+export const UNIT_MAX=20;       // längste Einheit, gleiche Grenze wie in der Datenbank
 export const DAYS=["Mo","Di","Mi","Do","Fr","Sa","So"];
 // Tageszeit-Auswahl im Formular
 export const DT=[["","Keine"],["morgen","Morgen"],["mittag","Mittag"],["abend","Abend"],["zeit","Uhrzeit"]];
@@ -37,3 +40,7 @@ export const ICONS=[
  ["handy","Handy",'<rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/>']
 ];
 export const ICO=Object.fromEntries(ICONS.map(i=>[i[0],i[2]]));
+
+// Themes der Sammlung: [Schlüssel (profiles.theme und data-theme am <html>), Name, frei ab so vielen Tagen insgesamt].
+// Die Farben stehen in css/tokens.css. Das Standard-Theme "Puls" (Schlüssel leer) ist immer frei.
+export const THEMES=[["nebel","Morgennebel",7],["wald","Wald",30],["sand","Sand",60],["tiefsee","Tiefsee",100],["abendrot","Abendrot",150],["mitternacht","Mitternacht",250]];

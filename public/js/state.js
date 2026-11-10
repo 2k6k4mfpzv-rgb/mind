@@ -19,6 +19,8 @@ export const ui={
   sel:[0,1,2,3,4,5,6],     // Neues Habit: gewählte Wochentage
   acol:"",aico:"",         // Neues Habit: gewählte Farbe und Symbol
   openId:null,             // Verlauf: ID der aufgeklappten Karte
-  ed:null,                 // Verlauf: Habit, das gerade bearbeitet wird (Formularwerte)
+  ed:null,                 // Habit, das gerade bearbeitet wird (Formularwerte). sheet = im Blatt auf "Heute" statt in der Verlauf-Karte
+  menu:null,               // Blatt der Kachel (lange drücken): {i: Habit, view: "main" | "pause" | "edit"}
+  pausOpen:false,          // Heute: Liste der pausierten Habits aufgeklappt
   pend:-1                  // Verlauf: Habit, bei dem "Wirklich löschen?" steht
 };

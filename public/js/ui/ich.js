@@ -6,6 +6,7 @@ import * as data from "../data.js";
 import {$,esc} from "./dom.js";
 import {render} from "./render.js";
 import {hey} from "./heute.js";
+import {renderSammlung} from "./sammlung.js";
 
 const rem=state.rem;
 const HM=/^([01]\d|2[0-3]):[0-5]\d$/;
@@ -28,7 +29,7 @@ function permUi(){
 }
 export function profUi(){
   const prof=state.prof;if(!prof)return;
-  $("pname").value=prof.name;hey();
+  $("pname").value=prof.name;hey();renderSammlung(); // Theme aus dem Profil anwenden
   let tz=[];try{tz=Intl.supportedValuesOf("timeZone")}catch(e){}
   if(!tz.includes(prof.timezone))tz.unshift(prof.timezone);
   $("ptz").innerHTML=tz.map(z=>`<option${z===prof.timezone?" selected":""}>${esc(z)}</option>`).join("");
@@ -81,7 +82,7 @@ $("copy").onclick=async()=>{
 $("imp").onclick=async()=>{
   try{
     const o=JSON.parse($("data").value);if(!Array.isArray(o.habits))throw 0;
-    const rows=o.habits.map((h,k)=>{const n=norm({name:String(h.name||"Habit"),days:h.days,cat:String(h.cat||""),created:h.created,done:h.done,target:h.target,daytime:h.daytime,color:h.color,icon:h.icon,settings_log:h.settings_log},TI);return{name:n.name,days:n.days,cat:n.cat,created:n.created,done:n.done,pos:k+1,target:n.target,daytime:n.daytime,color:n.color,icon:n.icon,settings_log:n.settings_log}});
+    const rows=o.habits.map((h,k)=>{const n=norm({name:String(h.name||"Habit"),days:h.days,cat:String(h.cat||""),created:h.created,done:h.done,target:h.target,daytime:h.daytime,color:h.color,icon:h.icon,settings_log:h.settings_log,unit:h.unit,unit_pl:h.unit_pl,paused:h.paused},TI);return{name:n.name,days:n.days,cat:n.cat,created:n.created,done:n.done,pos:k+1,target:n.target,daytime:n.daytime,color:n.color,icon:n.icon,settings_log:n.settings_log,unit:n.unit,unit_pl:n.unit_pl,paused:n.paused}});
     await data.replaceAll(rows);
     if(o.rem&&HM.test(o.rem.time||"")){rem.on=!!o.rem.on;rem.time=o.rem.time;updProf({rem_on:rem.on,rem_time:rem.time})}
     $("remOn").checked=rem.on;$("remTime").value=rem.time;permUi();

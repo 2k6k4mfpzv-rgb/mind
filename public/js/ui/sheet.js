@@ -20,7 +20,7 @@ $("sheet").addEventListener("click",e=>{if(e.target===e.currentTarget)e.currentT
 $("form").addEventListener("submit",e=>{
   e.preventDefault();const v=$("inp").value.trim();if(!v){$("inp").focus();return}
   if(!ui.sel.length)ui.sel=[0,1,2,3,4,5,6];
-  data.addHabit({name:v,days:ui.sel.slice().sort(),cat:$("cat").value.trim(),color:ui.acol,icon:ui.aico,created:TI,pos:state.habits.reduce((m,h)=>Math.max(m,h.pos||0),0)+1,target:clampT($("atg").value),daytime:daytimeOf($("adt").value,$("atm").value)});
-  $("inp").value="";$("aopts").innerHTML=optsHtml("a",1,"","");$("sheet").close();
+  data.addHabit({name:v,days:ui.sel.slice().sort(),cat:$("cat").value.trim(),color:ui.acol,icon:ui.aico,created:TI,pos:state.habits.reduce((m,h)=>Math.max(m,h.pos||0),0)+1,target:clampT($("atg").value),daytime:daytimeOf($("adt").value,$("atm").value),unit:$("aun").value.trim(),unit_pl:$("aup").value.trim()});
+  $("inp").value="";$("aopts").innerHTML=optsHtml("a",1,"","","","");$("sheet").close();
 });
-$("aopts").innerHTML=optsHtml("a",1,"","");
+$("aopts").innerHTML=optsHtml("a",1,"","","","");

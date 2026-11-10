@@ -4,11 +4,11 @@
 // Haken stehen in der Tabelle checkins. Der Server zählt hoch (checkin_add), die App schickt nie eine ganze Liste.
 // Dadurch geht kein Haken verloren, wenn zwei Geräte gleichzeitig abhaken.
 import {state,TI} from "./state.js";
-import {norm,cnt,DAYRE} from "./logic.js";
+import {norm,cnt,daysTotal,DAYRE} from "./logic.js";
 import {TARGET_MAX} from "./config.js";
 
 // Spalten der Tabelle habits, die die App braucht (die alte Spalte done wird nicht mehr gelesen)
-const HABIT_COLS="id,name,days,cat,created,pos,target,daytime,color,icon,settings_log,created_at";
+const HABIT_COLS="id,name,days,cat,created,pos,target,daytime,color,icon,settings_log,unit,unit_pl,paused,created_at";
 
 let db=null;
 export function connect(client){db=client}
@@ -37,7 +37,7 @@ export async function load(){
   if(failed(r.error?r:c))return false; // bei einem Fehler bleibt der bisherige Stand stehen
   const map=c.data||{};
   state.habits=(r.data||[]).map(h=>norm({...h,done:map[h.id]||{}},TI));
-  emit("change");
+  emit("change");keepDays();
   return true;
 }
 
@@ -57,6 +57,7 @@ function enqueue(h,day,next,call,undo){
     if(failed(r)){if(x){setLocal(x,day,undo(cnt(x,day)));emit("change")}return}
     // Der Server sagt, wie viele es wirklich sind (z. B. weil ein anderes Gerät auch abgehakt hat)
     if(x&&!q.n&&cnt(x,day)!==r.data){setLocal(x,day,+r.data||0);emit("change")}
+    keepDays();
   });
   return q.tail;
 }
@@ -154,8 +155,18 @@ export async function replaceAll(list){
 export async function loadProfile(){
   const r=await safe(db.from("profiles").select("*").single());
   failed(r);
-  if(r.data)state.prof=r.data;
+  if(r.data){state.prof=r.data;keepDays()}
   return !!r.data;
+}
+// Sammlung: Der höchste Stand an "Tagen insgesamt" steht im Profil (days_total) und wird nur erhöht. So geht ein
+// freigeschaltetes Theme nicht wieder verloren, wenn man später ein Habit mit seinen Haken löscht.
+// Läuft still nach bestätigten Ständen (geladen, Haken gespeichert). Klappt es nicht, beim nächsten Mal wieder.
+let daysBusy=false;
+function keepDays(){
+  const prof=state.prof,n=daysTotal(state.habits);
+  if(!prof||daysBusy||queues.size||!(n>prof.days_total))return;
+  daysBusy=true;
+  safe(db.from("profiles").update({days_total:n}).eq("id",prof.id)).then(r=>{daysBusy=false;if(!r.error&&n>prof.days_total)prof.days_total=n});
 }
 // Gibt true zurück, wenn gespeichert wurde
 export function updateProfile(o){

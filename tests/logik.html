@@ -14,7 +14,7 @@ iframe{position:absolute;left:-9999px;width:390px;height:844px;border:0}
 </head>
 <body>
 <h1>MIND – Tests</h1>
-<p>Lädt die echte App (<code>public/index.html</code> mit ihren Modulen) mit nachgebauter Datenbank (<code>tests/mock-supabase.js</code>) und prüft Rechen-Logik und Datenschicht. Echte Daten werden nie berührt. <a href="app.html">App mit Testdaten ansehen</a></p>
+<p>Lädt die echte App (<code>public/index.html</code> mit ihren Modulen) mit nachgebauter Datenbank (<code>tests/mock-supabase.js</code>) und prüft Rechen-Logik, Datenschicht und die neuen Bedienwege (Blatt der Kachel, Sammlung). Echte Daten werden nie berührt. <a href="app.html">App mit Testdaten ansehen</a></p>
 <p id="sum">Läuft …</p>
 <div id="out"></div>
 <iframe id="app" title="App im Test"></iframe>
@@ -234,6 +234,144 @@ async function run(){
     $("data").value=JSON.stringify({habits:[{name:"Alt",days:[0,1,2,3,4,5,6],done:{[day(-1)]:1,[day(-2)]:3,"kaputt":1,[day(-3)]:0},target:3}]});
     $("imp").click();for(let i=0;i<40&&H()[0]?.name!=="Alt";i++)await sleep(50);await quiet();
     const h=H()[0];return [H().length,h.done,MOCK().count(h.id,day(-2)),MOCK().checkins.length]},[1,{[day(-1)]:1,[day(-2)]:3},3,2]);
+
+  // Ab hier frisch laden (der letzte Test hat alle Habits ersetzt). Die Sammlung startet als "noch nie gesehen".
+  localStorage.removeItem("mind-seen");localStorage.removeItem("mind-theme");
+  await boot();
+  const T2=S.today,TJ=S.TI,doc=W.document,menu=()=>$("menu"),root=()=>W.document.documentElement;
+  const touch=(el,type,x=40,y=40)=>el.dispatchEvent(new W.PointerEvent(type,{bubbles:true,pointerType:"touch",clientX:x,clientY:y}));
+  const type=(id,v)=>{$(id).value=v;$(id).dispatchEvent(new W.Event("input",{bubbles:true}))};
+  const hasTile=h=>[...doc.querySelectorAll("#tiles .tile[data-t]")].some(b=>H()[+b.dataset.t]===h);
+  const dbHabit=h=>MOCK().habits.find(x=>x.id===h.id);
+
+  group("Puls 2: Pausieren (pausierte Tage sind nicht geplant)");
+  t("Pause mit Enddatum: davor geplant, währenddessen nicht, danach von selbst wieder",()=>{
+    const h=habit({created:day(-20),paused:[{from:day(-5),to:day(-3)}]});
+    return [sched(h,date(-6)),sched(h,date(-5)),sched(h,date(-3)),sched(h,date(-2))]},[true,false,false,true]);
+  t("Offene Pause gilt, bis man fortsetzt",()=>{
+    const h=habit({created:day(-20),paused:[{from:day(-1),to:null}]});
+    return [sched(h,date(-2)),sched(h,date(-1)),sched(h,date(0)),sched(h,date(30))]},[true,false,false,false]);
+  t("Konstanz leidet nicht: Pausierte Tage fallen aus der Rechnung",()=>{
+    const d=fill(-15,-6);
+    return [L.konst([habit({created:day(-40),done:d})],T2),L.konst([habit({created:day(-40),done:d,paused:[{from:day(-5),to:null}]})],T2)]},[34,42]);
+  t("Serie läuft über die Pause weiter",()=>L.streak(habit({created:day(-40),done:fill(-20,-6),paused:[{from:day(-5),to:null}]}),T2),15);
+  t("Haken aus der Zeit vor und in der Pause bleiben geschafft",()=>{
+    const h=habit({created:day(-20),done:{[day(-8)]:1,[day(-4)]:1},paused:[{from:day(-5),to:null}]});
+    return [L.ok(h,day(-8)),L.ok(h,day(-4)),L.total(h)]},[true,true,2]);
+  t("Pausieren ab heute, Fortsetzen am selben Tag nimmt die Pause ganz zurück",()=>{
+    const h=habit({created:day(-20)});h.paused=L.pauseList(h,T2);const a=h.paused;h.paused=L.resumeList(h,T2);
+    return [a,h.paused,sched(h,T2)===h.days.includes(L.wdi(T2))]},[[{from:TJ,to:null}],[],true]);
+  t("Fortsetzen nach ein paar Tagen: Die Pause endet gestern, die alten Tage bleiben pausiert",()=>{
+    const h=habit({created:day(-20),paused:[{from:day(-3),to:null}]});h.paused=L.resumeList(h,T2);
+    return [h.paused,sched(h,T2),sched(h,date(-2))]},[[{from:day(-3),to:day(-1)}],true,false]);
+  t("Pausieren mit Enddatum: bis einschließlich, danach wieder geplant",()=>{
+    const h=habit({created:day(-20)});h.paused=L.pauseList(h,T2,day(6));
+    return [h.paused,sched(h,date(6)),sched(h,date(7))]},[[{from:TJ,to:day(6)}],false,true]);
+  t("Enddatum ändern behält den Anfang der laufenden Pause, ein Datum in der Vergangenheit heißt offen",()=>{
+    const h=habit({created:day(-20),paused:[{from:day(-3),to:null}]});
+    return [L.pauseList(h,T2,day(2)),L.pauseList(h,T2,day(-1))]},[[{from:day(-3),to:day(2)}],[{from:day(-3),to:null}]]);
+  t("Im Mosaik ist ein pausierter Tag ein Strich, ein Haken in der Pause bleibt ein voller Punkt",()=>{
+    const m=V.mosaic(habit({created:day(-20),done:{[day(-3)]:1},paused:[{from:day(-3),to:day(-2)}]}));
+    return [(m.match(/class="z"/g)||[]).length,(m.match(/class="f"/g)||[]).length]},[1,1]);
+  t("Kaputte Pausen-Einträge aus der Datenbank werden aussortiert",()=>habit({paused:[{from:"x"},null,{from:day(-2),to:day(-5)},{from:day(-2)}]}).paused,[{from:day(-2),to:null}]);
+
+  group("Puls 2: Kachel lange drücken (Blatt mit Farbe, Bearbeiten, Pausieren)");
+  let ph;
+  await ta("Lange drücken öffnet das Blatt und hakt nicht ab",async()=>{
+    const [i,h]=at(h=>h.target===1&&sched(h,S.today)&&!L.cnt(h,TJ)),el=tile(i);ph=h;
+    touch(el,"pointerdown");await sleep(600);const open=menu().open;
+    touch(el,"pointerup");el.click();await sleep(400);
+    return [open,menu().open,L.cnt(h,TJ),$("mnT").textContent===h.name]},[true,true,0,true]);
+  await ta("Pausieren im Blatt: Kachel verschwindet, unten steht „1 pausiert“, gespeichert",async()=>{
+    menu().querySelector("[data-mpause]").click();menu().querySelector("[data-mpok]").click();await sleep(400);
+    return [menu().open,sched(ph,S.today),hasTile(ph),$("paus").textContent.startsWith("1 pausiert"),dbHabit(ph).paused]},[false,false,false,true,[{from:TJ,to:null}]]);
+  t("Im Verlauf steht „Pausiert“ an der Karte",()=>[...doc.querySelectorAll("#grid .hht")].filter(x=>x.querySelector(".pz")).map(x=>x.querySelector("b").textContent),[ph.name]);
+  await ta("Fortsetzen in der Zeile unten: Die Kachel ist wieder da",async()=>{
+    $("paus").querySelector("[data-pzt]").click();$("paus").querySelector("[data-pzr]").click();await quiet();
+    return [sched(ph,S.today),hasTile(ph),$("paus").textContent,dbHabit(ph).paused]},[true,true,"",[]]);
+  await ta("Scrollen (Finger bewegt sich) öffnet nichts",async()=>{
+    const el=tile(H().indexOf(ph));touch(el,"pointerdown");touch(el,"pointermove",40,75);await sleep(600);touch(el,"pointerup");
+    return menu().open},false);
+  await ta("Ein kurzer Tipp hakt weiter ab wie bisher",async()=>{
+    const el=tile(H().indexOf(ph));touch(el,"pointerdown");touch(el,"pointerup");el.click();await quiet();
+    const r=[menu().open,L.cnt(ph,TJ),MOCK().count(ph.id,TJ)];await D.setCount(ph,TJ,0);R.render();return r},[false,1,1]);
+  await ta("Rechtsklick öffnet das Blatt, ein Tipp auf eine Farbe ändert sie sofort",async()=>{
+    const el=tile(H().indexOf(ph)),shown=!el.dispatchEvent(new W.MouseEvent("contextmenu",{bubbles:true,cancelable:true}));
+    const k=L.colKey(ph)==="rose"?"petrol":"rose";menu().querySelector(`[data-mcol="${k}"]`).click();await quiet();
+    return [shown,menu().open,ph.color===k,dbHabit(ph).color===k,menu().querySelector(`[data-mcol="${k}"]`).getAttribute("aria-checked")]},[true,true,true,true,"true"]);
+  await ta("Bearbeiten im Blatt: leerer Name zeigt den Hinweis im Blatt und speichert nicht",async()=>{
+    S.ui.openId=ph.id;menu().querySelector("[data-medit]").click();R.render();const doppelt=!!$("grid").querySelector(".edit");
+    type("en","  ");menu().querySelector("[data-save]").click();await quiet();
+    return [doppelt,menu().open,menu().querySelector('[role="alert"]').textContent,dbHabit(ph).name===ph.name]},[false,true,"Der Name darf nicht leer sein.",true]);
+  await ta("Bearbeiten im Blatt: Name und Einheit speichern, das Blatt schließt sich",async()=>{
+    type("en","Umbenannt");type("eun","Seite");type("eup","Seiten");menu().querySelector("[data-save]").click();await sleep(400);
+    const db=dbHabit(ph);S.ui.openId=null;R.render();
+    return [menu().open,S.ui.ed,S.ui.menu,ph.name,db.name,db.unit,db.unit_pl]},[false,null,null,"Umbenannt","Umbenannt","Seite","Seiten"]);
+  await ta("Pausieren aus dem Verlauf mit Enddatum, Fortsetzen dort geht direkt",async()=>{
+    S.ui.openId=ph.id;R.render();$("grid").querySelector("[data-pz]").click();const open=menu().open&&!!$("mpto");
+    $("mpto").value=day(3);menu().querySelector("[data-mpok]").click();await sleep(400);
+    const p=dbHabit(ph).paused,txt=$("grid").querySelector("[data-pz]").textContent;
+    $("grid").querySelector("[data-pz]").click();await quiet();S.ui.openId=null;R.render();
+    return [open,p,txt,dbHabit(ph).paused]},[true,[{from:TJ,to:day(3)}],"Fortsetzen",[]]);
+  await ta("Solange das Blatt offen ist, platzt kein Haken vom anderen Gerät hinein, danach ist er da",async()=>{
+    await sleep(1600);const i=H().indexOf(ph);tile(i).dispatchEvent(new W.MouseEvent("contextmenu",{bubbles:true,cancelable:true}));
+    MOCK().other(ph.id,TJ,1);const drin=tile(H().indexOf(ph)).getAttribute("aria-pressed");
+    menu().querySelector("[data-mx]").click();await sleep(300);
+    const r=[drin,tile(H().indexOf(ph)).getAttribute("aria-pressed")];await D.setCount(ph,TJ,0);R.render();return r},["false","true"]);
+
+  group("Puls 2: Einheit auf der Kachel");
+  const ut=(o,n)=>L.unitText(habit(o),n);
+  t("Mehrfach-Habit mit Einheit: Mehrzahl und Einzahl",()=>[ut({target:6,unit:"Glas",unit_pl:"Gläser"},3),ut({target:6,unit:"Glas",unit_pl:"Gläser"},5)],["noch 3 Gläser","noch 1 Glas"]);
+  t("Ohne Mehrzahl gilt die Einheit für beides, ohne Einheit bleibt es bei „noch 3×“",()=>[ut({target:4,unit:"Runden"},1),ut({target:6},3)],["noch 3 Runden","noch 3×"]);
+  t("Ziel erreicht: kein „noch“ mehr",()=>ut({target:6,unit:"Glas",unit_pl:"Gläser"},6),"");
+  t("Einmal am Tag: Die Einheit steht einfach da, ohne Einheit nichts",()=>[ut({unit:"5 Minuten"},0),ut({unit:"5 Minuten"},1),ut({},0)],["5 Minuten","5 Minuten",""]);
+  await ta("Die Kachel zeigt die Einheit (Testdaten: Wasser in Gläsern)",async()=>{
+    const [i,h]=at(h=>h.unit==="Glas");await D.setCount(h,TJ,3);R.render();const a=tile(i).querySelector("small").textContent;
+    await D.setCount(h,TJ,5);R.render();return [a.split(" · ")[0],tile(i).querySelector("small").textContent.split(" · ")[0]]},["noch 3 Gläser","noch 1 Glas"]);
+  await ta("Neues Habit mit Einheit anlegen",async()=>{
+    type("inp","Liegestütze");$("atg").value=3;$("aun").value="Satz";$("aup").value="Sätze";
+    $("form").dispatchEvent(new W.Event("submit",{bubbles:true,cancelable:true}));await quiet();
+    const h=H().find(h=>h.name==="Liegestütze");return [h.unit,h.unit_pl,L.unitText(h,0),$("aun").value]},["Satz","Sätze","noch 3 Sätze",""]);
+
+  group("Puls 3: Sammlung (Themes nach Tagen insgesamt)");
+  const N=L.daysTotal(H()),prof=()=>MOCK().profiles[0],free=["nebel","wald","sand","tiefsee","abendrot","mitternacht"].filter(k=>L.themeOk(k,N));
+  t("Tage insgesamt: Jeder Tag zählt einmal, egal wie viele Habits, teilweise geschafft zählt nicht",()=>
+    L.daysTotal([habit({done:{[day(-3)]:1,[day(-2)]:1}}),habit({done:{[day(-2)]:1,[day(-1)]:1}}),habit({target:4,done:{[day(-9)]:1}})]),3);
+  t("Nicht am Stück: Lücken ändern nichts",()=>L.daysTotal([habit({created:day(-90),done:{[day(-80)]:1,[day(-40)]:1,[day(-1)]:1}})]),3);
+  t("Schwellen 7, 30, 60, 100, 150, 250",()=>[L.themeOk("nebel",6),L.themeOk("nebel",7),L.themeOk("wald",30),L.themeOk("sand",60),L.themeOk("tiefsee",100),L.themeOk("abendrot",149),L.themeOk("mitternacht",250)],[false,true,true,true,true,false,true]);
+  t("Standard ist immer frei, ein unbekanntes Theme nie",()=>[L.themeOk("",0),L.themeOk("gibtsnicht",999)],[true,false]);
+  t("Nächstes Theme",()=>[L.nextTheme(0)[0],L.nextTheme(149)[0],L.nextTheme(250)],["nebel","abendrot",null]);
+  t("Die Testdaten haben über 100 und unter 150 Tage",()=>N>=100&&N<150,true);
+  t("Der Höchststand wird im Profil gemerkt",()=>prof().days_total,N);
+  t("Vor dem ersten Besuch weist die Karte im Verlauf ruhig auf das neue Theme hin",()=>[$("thc").hidden,$("thc").querySelector("b").textContent],[false,"Theme „Tiefsee“ ist frei"]);
+  await ta("Antippen führt in die Sammlung, dort sind die neuen Themes markiert",async()=>{
+    $("thc").click();
+    return [$("v-sammlung").hidden,+$("smN").textContent===N,[...doc.querySelectorAll("#ths small")].filter(x=>x.textContent==="Neu freigeschaltet").length,$("smP").textContent.includes("Abendrot")]},[false,true,free.length,true]);
+  t("Danach zeigt die Karte im Verlauf den Weg zum nächsten Theme",()=>$("thc").textContent.includes(`Theme „Abendrot“${N} von 150 Tagen`),true);
+  t("Freie Themes sind Knöpfe, noch nicht freie zeigen nur den Weg (kein Knopf, kein Schloss)",()=>
+    [[...doc.querySelectorAll("#ths button.th")].map(b=>b.dataset.th),[...doc.querySelectorAll("#ths div.th small")].map(x=>x.textContent)],
+    [[""].concat(free),[`noch ${150-N} Tage`,`noch ${250-N} Tage`]]);
+  await ta("Theme antippen: sofort angewendet, im Profil gespeichert, auf dem Gerät gemerkt",async()=>{
+    doc.querySelector('#ths [data-th="wald"]').click();const sofort=root().dataset.theme;await quiet();
+    return [sofort,prof().theme,localStorage.getItem("mind-theme"),doc.querySelector('#ths [data-th="wald"]').getAttribute("aria-checked"),W.getComputedStyle(root()).getPropertyValue("--acc").trim()!==""]},["wald","wald","wald","true",true]);
+  await ta("Kein Netz beim Wechseln: Das alte Theme kommt zurück",async()=>{
+    net(false);doc.querySelector('#ths [data-th="nebel"]').click();const sofort=root().dataset.theme;await quiet();net(true);
+    return [sofort,root().dataset.theme,prof().theme]},["nebel","wald","wald"]);
+  t("Die Vorschau jedes Themes hat seine eigenen Farben",()=>new Set([...doc.querySelectorAll("#ths .tp")].map(x=>W.getComputedStyle(x).backgroundColor)).size,7);
+  t("Steht im Profil ein Theme, das noch nicht frei ist, gilt der Standard",()=>{
+    S.state.prof.theme="mitternacht";R.render();const a=root().dataset.theme;S.state.prof.theme="wald";R.render();return [a,root().dataset.theme]},[undefined,"wald"]);
+  t("Man verliert nie etwas: Ohne Haken bleiben die Tage und das Theme",()=>{
+    const keep=S.state.habits;S.state.habits=[];R.render();const r=[L.daysTotal(H()),+$("smN").textContent===N,root().dataset.theme];S.state.habits=keep;R.render();return r},[0,true,"wald"]);
+  await ta("Zurück zum Standard",async()=>{doc.querySelector('#ths [data-th=""]').click();await quiet();return [root().dataset.theme,prof().theme,localStorage.getItem("mind-theme")]},[undefined,"",null]);
+  await ta("Backup und Wiederherstellen behalten Einheit und Pausen",async()=>{
+    await sleep(1600);
+    $("data").value=JSON.stringify({habits:[{name:"Mit Einheit",days:ALL,created:day(-10),target:2,unit:"Glas",unit_pl:"Gläser",paused:[{from:day(-3),to:day(-2)}],done:{[day(-1)]:2}}]});
+    $("imp").click();for(let i=0;i<40&&H()[0]?.name!=="Mit Einheit";i++)await sleep(50);await quiet();
+    const db=MOCK().habits[0];return [H().length,db.unit,db.unit_pl,db.paused,sched(H()[0],date(-3))]},[1,"Glas","Gläser",[{from:day(-3),to:day(-2)}],false]);
+  await ta("Abmelden: Das Theme bleibt nicht auf dem Gerät",async()=>{
+    S.state.prof.theme="wald";R.render();const a=root().dataset.theme;$("out").click();await sleep(300);
+    return [a,root().dataset.theme,localStorage.getItem("mind-theme"),$("app").hidden]},["wald",undefined,null,true]);
+  localStorage.removeItem("mind-seen");
 
   document.getElementById("sum").textContent=fail?`${fail} von ${pass+fail} Tests fehlgeschlagen`:`Alle ${pass} Tests bestanden`;
   document.getElementById("sum").className=fail?"no":"ok";
