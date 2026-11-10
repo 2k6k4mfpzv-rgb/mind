@@ -12,7 +12,7 @@
 // Die echte App mit nachgebauter Datenbank (tests/mock-supabase.js) und 9 erfundenen Habits.
 // Zum Ansehen und Ausprobieren, ohne die echte Datenbank zu berühren. Starten wie tests/logik.html.
 fetch("../public/index.html",{cache:"no-store"}).then(r=>r.text()).then(h=>{
-  document.getElementById("f").srcdoc=h.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase[^"]*"><\/script>/,'<script src="/tests/mock-supabase.js"><\/script>').replace('href="fonts/','href="/public/fonts/').replace("<head>",'<head><base href="/public/">');
+  document.getElementById("f").srcdoc=h.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase[^"]*"><\/script>/,'<script src="/tests/mock-supabase.js"><\/script>').replace(/(href|src)="(css|js|fonts)\//g,'$1="/public/$2/').replace("<head>",'<head><base href="/public/">');
 });
 </script>
 </body>

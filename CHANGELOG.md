@@ -1,16 +1,35 @@
 # MIND – Änderungsprotokoll
 
-Private Habit-Tracker-Website. Frontend: eine Datei (`public/index.html`). Daten und Login: Supabase. Hosting: Cloudflare (Workers mit statischen Dateien), automatisches Deployment bei jedem Commit auf `main`.
+Private Habit-Tracker-Website. Frontend: `public/` (Gerüst `index.html`, dazu `css/` und `js/` als Module, kein Build-Schritt). Daten und Login: Supabase. Hosting: Cloudflare (Workers mit statischen Dateien), automatisches Deployment bei jedem Commit auf `main`.
 
 ## Aufbau
 | Teil | Ort |
 |---|---|
-| Webseite | `public/index.html` |
+| Webseite | `public/index.html`, `public/css/`, `public/js/` |
 | Cloudflare-Konfiguration | `wrangler.jsonc` (Ordner `./public` wird veröffentlicht) |
-| Datenbank-Schema | `docs/schema.sql` (in Supabase SQL Editor ausgeführt) |
+| Datenbank-Schema | `docs/schema.sql` und danach die Dateien `docs/JJJJ-MM-TT_*.sql` der Reihe nach |
 | Login | Supabase Auth, E-Mail und Passwort, Registrierung gesperrt |
 
 ## Änderungen (neueste zuerst)
+
+### 2026-11-10 – Fundament: Code in Module aufgeteilt, Haken in eigener Tabelle (mehrere Geräte sicher)
+- **Warum:** Erstes von vier Paketen bis 16.11. (Vault: `Habit Tracker/MIND – Fable-Plan bis 16.11. (Profi-Level).md`). Alles, was danach kommt (Puls 2 und 3, installierbare App mit Offline und Push, KI, Design), soll auf einem sauberen Fundament stehen. Dazu der offene Punkt aus dem Review vom 07.11.: Haken zwei Geräte gleichzeitig ab, konnte ein Haken verloren gehen. **Für Paul sieht die App genau gleich aus.**
+- **Teil A – Aufteilung (kein Build-Schritt, der Browser lädt die Dateien direkt):**
+  - `public/index.html` enthält nur noch das Gerüst der Seite (134 statt 714 Zeilen).
+  - `public/css/tokens.css` (alle Farben, Rundungen, Abstände, Schatten, Schrift, Animationsdauern als Variablen), `base.css` (Grundregeln, Formularfelder), `components.css` (Bausteine und Ansichten).
+  - `public/js/config.js` (Supabase-Adresse, Farben, Symbole, Grenzen), `logic.js` (reine Rechen-Funktionen, „heute“ ist ein Parameter), `state.js` (Zustand im Browser), `data.js` (die einzige Stelle, die mit Supabase spricht), `ui/` (dom, render, heute, verlauf, ich, sheet, toast), `app.js` (Start, Login, Tab-Leiste, aktuell bleiben).
+- **Teil B – Daten:** Neue Tabelle `checkins` (eine Zeile pro Habit und Tag). Die App schickt nie mehr die ganze Liste, sondern ruft Funktionen in der Datenbank auf: `checkin_add` zählt in einem Schritt hoch (nie unter 0, nie über das Tagesziel), `checkin_set` setzt fest (zurück auf 0, Rückgängig), `checkins_map` lädt alle Haken in einem Rutsch. Datei `docs/2026-11-10_checkins.sql`. **Muss laufen, bevor der neue Code getestet wird.**
+  - **Umzug:** Alle bisherigen Haken werden aus `habits.done` kopiert. Die SQL prüft selbst, ob Tage und Haken vorher und nachher gleich sind (insgesamt und pro Habit), sonst bricht sie ab und ändert nichts.
+  - **Rückweg bleibt offen:** Die Spalte `done` bleibt und wird automatisch aktuell gehalten (in beide Richtungen). Der alte Code auf `main` und alte offene Browser-Tabs funktionieren weiter und verlieren nichts. `done` wird frühestens in ein paar Wochen gelöscht (steht unten in der SQL-Datei).
+  - **Realtime:** Ein Haken auf dem Handy erscheint sofort am Mac, ohne Neuladen.
+- **Verhalten, das sich bewusst ändert (alles nur im Fehlerfall):**
+  - Schlägt das Speichern fehl (kein Netz), wird die Änderung jetzt zurückgenommen (Kachel, Bearbeiten, Löschen, Verschieben, Einstellungen), statt nur eine Meldung zu zeigen. Vorher sah es aus wie gespeichert, war es aber nicht.
+  - Schlägt das Neuladen fehl, bleiben die Habits stehen, statt kurz zu verschwinden.
+  - Schnelle Tipps gehen nacheinander zum Server, in der richtigen Reihenfolge.
+- **Tests:** `tests/logik.html` läuft jetzt über die Module und hat 48 Tests (vorher 28): die bisherigen plus Datenschicht (Server zählt, zwei Geräte gleichzeitig, schnelle Tipps, Zurückrollen bei Fehlern, Realtime, Löschen, Backup und altes Backup). `tests/mock-supabase.js` kennt `checkins`, die drei Funktionen und Realtime.
+- **Teststand:** 48 von 48 grün. Vorher/Nachher automatisch verglichen (alte und neue App nebeneinander, dieselben Klicks, jedes Element mit allen berechneten CSS-Werten und Positionen): 64 Schritte (Handy 375 px und Mac 1280 px, hell und dunkel, je 16 Klick-Schritte durch Heute, Verlauf, Bearbeiten, Ich und Neues Habit), knapp 97.000 Elemente, **0 Unterschiede**. **SQL am 10.11.2026 nach Pauls Ja ausgeführt** (Backup davor: `2026-11-10_vor-Fundament.json`, Prüfsumme gleich wie in der Datenbank). Umzug: 94 Tage und 120 Haken, bei allen 9 Habits gleich, die Tabelle `habits` ist unverändert. Danach ein Probelauf in der echten Datenbank als angemeldeter Nutzer, der am Ende komplett zurückgenommen wurde: Hochzählen bis zum Tagesziel (2, 3, 4, 4), nie unter 0, Festsetzen (auch 99 wird 20, -5 wird 0), `done` wird nachgezogen, alter Code, der `done` schreibt, landet in `checkins` (neu, geändert, entfernt), Löschen nimmt die Haken mit, ein anderer Nutzer sieht nichts und darf nichts, nicht angemeldet wird abgelehnt. Supabase-Sicherheitscheck: keine Meldung zu den neuen Tabellen und Funktionen. Paul hat die Vorschau getestet und am 10.11.2026 „Passt, mergen“ gesagt. Gemergt mit Pull Request #5.
+- **Hinweis:** Die Tests und die Vorschau brauchen einen kleinen Webserver (`python3 -m http.server 8000`), ein Doppelklick auf die Datei reicht nicht (Module lädt der Browser nur über http).
+- **Nichts sonst geändert.** Aussehen, Texte und Bedienung sind gleich.
 
 ### 2026-11-07 – Roadmap: Zielbild „Puls + KI“ eingeplant
 - **Warum:** Paul hat entschieden, dass das Konzeptbild „Puls + KI“ der Idealzustand ist, außer dem, was in Puls Schritt 1 und 1.1 bewusst anders gebaut wurde. Alles soll in der Roadmap stehen, damit nichts vergessen wird. Abgleich im Vault: `Habit Tracker/MIND – Zielbild Puls + KI (Abgleich).md`.
