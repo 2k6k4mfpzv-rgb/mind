@@ -190,5 +190,64 @@ details.restore{margin:0;padding:14px 0 6px;border-top:1px solid var(--line)}
 details.restore summary{font-size:.95rem}
 details.restore .note{margin:12px 0 10px}
 @media (max-width:820px){.sg{padding-left:18px;padding-right:18px}}
+
+/* --- Puls Schritt 2: Kachel lange drücken, Pausieren --- */
+/* Beim Halten der Kachel kein Text-Markieren und kein Safari-Menü */
+.tile{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+/* Heute: pausierte Habits als ruhige Zeile ganz unten, aufgeklappt mit "Fortsetzen" */
+.paus{margin-top:18px}
+.paus:empty{display:none}
+.pzh{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:44px;padding:0 4px;color:var(--mute);font-size:.88rem;font-weight:600}
+.pzr{display:flex;align-items:center;gap:var(--sp-3);padding:10px 4px;border-top:1px solid var(--line)}
+.pzn{flex:1;min-width:0}
+.pzn b{display:block;font-size:.95rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pzn small{display:block;font-size:.78rem;color:var(--mute)}
+/* Verlauf: Hinweis "Pausiert" neben dem Namen. Pausierte Tage im Mosaik sind ein kurzer Strich statt eines Punkts */
+.pz{flex:none;padding:2px 10px;border-radius:var(--r-pill);background:var(--cell);font-size:.72rem;font-weight:600;color:var(--mute)}
+.mo i.z{background:linear-gradient(var(--line2),var(--line2)) center/60% 2px no-repeat}
+/* Blatt der Kachel (gleiches Blatt wie "Neues Habit"): Name, Farbtupfer, Zeilen zum Antippen */
+.mh{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.mh b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shh .del{flex:none;padding:8px 4px}
+.shi .note.first{margin:0 0 14px}
+.shi>.set{margin-top:16px}
+.shi .edit{padding:0;border:0}
+.mrows{display:grid;margin-top:16px;border-top:1px solid var(--line)}
+.mrows button{display:flex;align-items:center;gap:var(--sp-3);min-height:54px;text-align:left;font-weight:600;border-bottom:1px solid var(--line)}
+.mrows svg{width:20px;height:20px;flex:none;fill:none;stroke:var(--mute);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* --- Puls Schritt 3: Sammlung --- */
+/* Themes als Karten mit kleiner Vorschau. Noch nicht freie sehen genauso aus (kein Schloss, nichts ausgegraut),
+   sie zeigen nur, wie weit es noch ist. */
+#v-sammlung .kc{margin-top:0}
+.ths{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--sp-3);margin-top:14px}
+.th{position:relative;display:block;text-align:left;padding:8px 8px 12px;border-radius:var(--r-tile);background:var(--panel);border:1px solid var(--line)}
+button.th{transition:transform var(--t-press)}
+button.th:active{transform:scale(.97)}
+.th[aria-checked="true"]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.thn{display:block;padding:10px 6px 0}
+.thn b{display:block;font-size:.95rem;font-weight:700;letter-spacing:-.01em}
+.thn small{display:block;font-size:.78rem;color:var(--mute)}
+.tho{position:absolute;right:14px;bottom:16px;width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center}
+.tho svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.thb{display:block;height:6px;border-radius:var(--r-pill);background:var(--cell);margin-top:8px;overflow:hidden}
+.thb i{display:block;height:100%;border-radius:var(--r-pill);background:var(--acc)}
+/* Vorschau eines Themes: eine winzige Seite in dessen Farben. data-theme am Element holt sie aus tokens.css */
+.tp{display:block;position:relative;flex:none;height:84px;border-radius:18px;background:var(--bg);border:1px solid var(--line);overflow:hidden}
+.tp i{position:absolute;left:12px;top:13px;width:36%;height:7px;border-radius:4px;background:var(--ink)}
+.tp i+i{top:26px;width:22%;background:var(--mute)}
+.tp b{position:absolute;right:11px;top:9px;width:26px;height:26px;border-radius:50%;border:5px solid var(--cell);border-top-color:var(--acc);border-right-color:var(--acc);transform:rotate(45deg)}
+.tp em{position:absolute;left:12px;bottom:10px;width:calc(50% - 15px);height:28px;border-radius:9px;background:var(--panel);border:1px solid var(--line)}
+.tp em+em{left:auto;right:12px;background:var(--acc);border-color:transparent}
+/* Verlauf: kleine Karte zum nächsten Theme, Antippen führt in die Sammlung */
+.thc{display:flex;align-items:center;gap:var(--sp-4);width:100%;margin-top:14px;padding:16px 18px;text-align:left}
+.thcT{flex:1;min-width:0;display:grid;gap:2px}
+.thcT b{font-size:1.05rem;font-weight:800;letter-spacing:-.01em;margin-top:4px}
+.thcT small{font-size:.8rem;color:var(--mute)}
+.thc .thb{margin-top:10px}
+.thc .tp{width:96px;height:64px}
+.thc .tp i{top:10px}.thc .tp i+i{top:21px}
+.thc .tp b{top:7px;width:20px;height:20px;border-width:4px}
+.thc .tp em{bottom:8px;height:18px;border-radius:7px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 #login{max-width:380px;margin:12vh auto;padding:0 20px}#login form{display:grid;gap:10px}#login h1{font-size:3rem;margin-bottom:28px}

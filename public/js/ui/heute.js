@@ -1,16 +1,17 @@
 // MIND – Ansicht "Heute": Kacheln, die sich beim Antippen füllen, Tagesring, Konstanz-Karte, Filter nach Tageszeit.
 import {state,ui,today,TI} from "../state.js";
-import {sched,cnt,tileP,bucket,konst,dayProgress,dayStreak,hexOf} from "../logic.js";
+import {sched,cnt,tileP,bucket,konst,dayProgress,dayStreak,hexOf,unitText,pauseOn} from "../logic.js";
 import * as data from "../data.js";
-import {$,esc,fmt,CHECK,dtLabel,icoOf} from "./dom.js";
+import {$,esc,fmt,CHECK,dtLabel,icoOf,pauseLabel} from "./dom.js";
 import {render,onRender} from "./render.js";
 import {offerUndo} from "./toast.js";
 import {openSheet} from "./sheet.js";
+import {resume} from "./menu.js";
 
 const RC=2*Math.PI*28; // Umfang des Tagesrings
 const tileLab=h=>{const n=cnt(h,TI);return h.name+(h.target>1?`, ${n} von ${h.target}`:"")+(n>=h.target?", erledigt":"")};
 function tileIn(h){
-  const n=cnt(h,TI),done=n>=h.target,sub=[h.target>1&&!done?`noch ${h.target-n}×`:"",dtLabel(h.daytime),h.cat].filter(Boolean).join(" · ");
+  const n=cnt(h,TI),done=n>=h.target,sub=[unitText(h,n),dtLabel(h.daytime),h.cat].filter(Boolean).join(" · ");
   return `<span class="tr"><span class="ini">${icoOf(h)}</span>${done?`<span class="ok">${CHECK}</span>`:h.target>1?`<span class="cnt">${n}/${h.target}</span>`:""}</span><span class="bot"><b>${esc(h.name)}</b>${sub?`<small>${esc(sub)}</small>`:""}</span>`;
 }
 
@@ -26,6 +27,10 @@ function renderHeute(){
   const empty=!habits.length?"Noch keine Habits. Leg dein erstes an.":!td.length?"Heute ist nichts geplant. Genieß den Tag.":"";
   $("tiles").innerHTML=(empty?`<p class="empty">${empty}</p>`:"")+td.filter(([h])=>!ui.dfil||bucket(h.daytime)===ui.dfil).map(([h,hi])=>`<button class="tile" data-t="${hi}" style="--c:${hexOf(h)};--p:${tileP(h,TI)}" aria-pressed="${tileP(h,TI)>=1}" aria-label="${esc(tileLab(h))}"><span class="fill"></span><span class="tc" aria-hidden="true">${tileIn(h)}</span><span class="tc on" aria-hidden="true">${tileIn(h)}</span></button>`).join("")
     +'<button class="tile add" data-new="1" style="--p:0"><span class="tc"><span class="tr"><span class="ini"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg></span></span><span class="bot"><b>Neues Habit</b></span></span></button>';
+  // Pausierte Habits: eine ruhige Zeile ganz unten, aufgeklappt mit "Fortsetzen"
+  const pz=habits.map((h,i)=>[h,i,pauseOn(h,TI)]).filter(x=>x[2]);
+  if(!pz.length)ui.pausOpen=false;
+  $("paus").innerHTML=pz.length?`<button class="pzh" data-pzt="1" aria-expanded="${ui.pausOpen}">${pz.length} pausiert<span aria-hidden="true">${ui.pausOpen?"–":"+"}</span></button>`+(ui.pausOpen?pz.map(([h,i,p])=>`<div class="pzr"><span class="ini" style="--c:${hexOf(h)}">${icoOf(h)}</span><span class="pzn"><b>${esc(h.name)}</b><small>${pauseLabel(p)}</small></span><button class="btn ghost sm" data-pzr="${i}">Fortsetzen</button></div>`).join(""):""):"";
 }
 
 let ringP=0;
@@ -46,6 +51,11 @@ function ring(anim){ // Tagesring, Konstanz-Karte und Serie
 onRender(keep=>{if(!keep)renderHeute();ring(keep)});
 
 $("dchips").onclick=e=>{const b=e.target.closest("button");if(b){ui.dfil=b.dataset.df;renderHeute()}};
+$("paus").onclick=e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.pzt)ui.pausOpen=!ui.pausOpen;else resume(state.habits[+b.dataset.pzr]);
+  render();
+};
 // Kachel antippen: +1, die Kachel füllt sich. Bei vollem Ziel zurück auf 0.
 // Nur diese eine Kachel wird geändert (nicht neu gebaut), damit die Füllung animiert.
 $("tiles").addEventListener("click",e=>{

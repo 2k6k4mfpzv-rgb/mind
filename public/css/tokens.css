@@ -1,8 +1,9 @@
 /* MIND – Design-Tokens: alle Werte, die das Aussehen bestimmen, an einer Stelle.
    Wer Farben, Rundungen, Abstände oder Animationen ändern will, ändert sie hier und nirgends sonst.
-   Dunkel ist der Standard, hell folgt dem Gerät. data-theme="light" oder "dark" am <html> erzwingt eins von beiden
-   (Platz für Themes aus der Sammlung, Puls Schritt 3). */
-:root{
+   Dunkel ist der Standard, hell folgt dem Gerät. data-theme="light" oder "dark" am <html> erzwingt eins von beiden.
+   Themes aus der Sammlung stehen ganz unten: data-theme="wald" usw. tauscht nur die Farben, jeweils dunkel und hell.
+   [data-theme="puls"] gibt es nur für die kleine Vorschau des Standard-Themes in der Sammlung. */
+:root,[data-theme="puls"]{
   /* Farben. --panel Karten, --cell Kacheln und Felder, --moo leere Punkte im Mosaik,
      --acc Koralle (Ring, Hauptknopf), --accT Koralle als Text, --dark Tinte auf farbigen Flächen */
   --bg:#141319;--panel:#1D1C24;--ink:#F4F2F8;--mute:#A19DAD;--line:#2A2933;--line2:#3A3944;--cell:#24232D;--moo:#34333F;--hi:#F4F2F8;--on:#141319;--acc:#FF7A59;--accT:#FF7A59;--dark:#1B1A21;
@@ -31,5 +32,27 @@
   /* Ebenen */
   --z-tabs:5;--z-toast:6;
 }
-@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#FAF8F5;--panel:#FFFFFF;--ink:#1B1A21;--mute:#6B6876;--line:#ECE9F0;--line2:#D9D5DF;--cell:#F0EDF2;--moo:#F0EDF2;--hi:#1B1A21;--on:#FAF8F5;--acc:#F26B4F;--accT:#C2401E;color-scheme:light}}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]),[data-theme="puls"]{--bg:#FAF8F5;--panel:#FFFFFF;--ink:#1B1A21;--mute:#6B6876;--line:#ECE9F0;--line2:#D9D5DF;--cell:#F0EDF2;--moo:#F0EDF2;--hi:#1B1A21;--on:#FAF8F5;--acc:#F26B4F;--accT:#C2401E;color-scheme:light}}
 :root[data-theme="light"]{--bg:#FAF8F5;--panel:#FFFFFF;--ink:#1B1A21;--mute:#6B6876;--line:#ECE9F0;--line2:#D9D5DF;--cell:#F0EDF2;--moo:#F0EDF2;--hi:#1B1A21;--on:#FAF8F5;--acc:#F26B4F;--accT:#C2401E;color-scheme:light}
+
+/* --- Themes der Sammlung (Puls Schritt 3). Namen und Schwellen stehen in js/config.js (THEMES). ---
+   Jedes Theme tauscht nur die Farben. Die 8 Habit-Farben bleiben gleich. Alle Textfarben sind auf Kontrast geprüft
+   (mindestens 4,5 : 1). Der Selektor ohne :root färbt die kleine Vorschau in der Sammlung. */
+/* Morgennebel (ab 7 Tagen): kühles Grau-Blau */
+:root[data-theme="nebel"],[data-theme="nebel"]{--bg:#12161B;--panel:#1A2027;--ink:#EEF2F6;--mute:#9AA5B2;--line:#252D36;--line2:#364250;--cell:#212932;--moo:#2F3945;--acc:#7FB2E5;--accT:#8FBDEB;--hi:#EEF2F6;--on:#12161B;color-scheme:dark}
+@media (prefers-color-scheme:light){:root[data-theme="nebel"],[data-theme="nebel"]{--bg:#F4F6F8;--panel:#FFFFFF;--ink:#18202A;--mute:#5C6875;--line:#E4E9EE;--line2:#CFD7DF;--cell:#E9EEF2;--moo:#E9EEF2;--acc:#5B9BD8;--accT:#235F9B;--hi:#18202A;--on:#F4F6F8;color-scheme:light}}
+/* Wald (ab 30 Tagen): ruhiges Grün */
+:root[data-theme="wald"],[data-theme="wald"]{--bg:#111712;--panel:#19211B;--ink:#EEF4EE;--mute:#9AAA9D;--line:#243026;--line2:#354538;--cell:#202A22;--moo:#2D3A30;--acc:#7CC08A;--accT:#8ACB97;--hi:#EEF4EE;--on:#111712;color-scheme:dark}
+@media (prefers-color-scheme:light){:root[data-theme="wald"],[data-theme="wald"]{--bg:#F5F7F2;--panel:#FFFFFF;--ink:#18211A;--mute:#5B695E;--line:#E4EAE0;--line2:#CFD8CA;--cell:#EAEFE6;--moo:#EAEFE6;--acc:#5FA56F;--accT:#2B6A3A;--hi:#18211A;--on:#F5F7F2;color-scheme:light}}
+/* Sand (ab 60 Tagen): warmes Beige */
+:root[data-theme="sand"],[data-theme="sand"]{--bg:#171512;--panel:#201D19;--ink:#F5F1EA;--mute:#ABA394;--line:#2E2A24;--line2:#403B33;--cell:#282420;--moo:#38332C;--acc:#D9B382;--accT:#DDB98A;--hi:#F5F1EA;--on:#171512;color-scheme:dark}
+@media (prefers-color-scheme:light){:root[data-theme="sand"],[data-theme="sand"]{--bg:#F6F1E8;--panel:#FFFDF9;--ink:#221E18;--mute:#6A6255;--line:#E9E1D3;--line2:#D6CCBA;--cell:#EEE7DA;--moo:#EEE7DA;--acc:#BC8A4B;--accT:#7D531A;--hi:#221E18;--on:#F6F1E8;color-scheme:light}}
+/* Tiefsee (ab 100 Tagen): Petrol */
+:root[data-theme="tiefsee"],[data-theme="tiefsee"]{--bg:#0E1719;--panel:#152124;--ink:#EAF4F5;--mute:#95AAAD;--line:#203135;--line2:#30464B;--cell:#1B2A2E;--moo:#283B40;--acc:#4FC1C0;--accT:#63CCCB;--hi:#EAF4F5;--on:#0E1719;color-scheme:dark}
+@media (prefers-color-scheme:light){:root[data-theme="tiefsee"],[data-theme="tiefsee"]{--bg:#F1F7F7;--panel:#FFFFFF;--ink:#132123;--mute:#55666A;--line:#DFEAEB;--line2:#C8D8DA;--cell:#E5EFF0;--moo:#E5EFF0;--acc:#35A1A0;--accT:#126766;--hi:#132123;--on:#F1F7F7;color-scheme:light}}
+/* Abendrot (ab 150 Tagen): Pflaume und Apricot */
+:root[data-theme="abendrot"],[data-theme="abendrot"]{--bg:#1A1220;--panel:#251A2D;--ink:#F8EFEA;--mute:#B5A3B0;--line:#33253C;--line2:#47364F;--cell:#2D2036;--moo:#3D2E47;--acc:#F5A25D;--accT:#F7AE72;--hi:#F8EFEA;--on:#1A1220;color-scheme:dark}
+@media (prefers-color-scheme:light){:root[data-theme="abendrot"],[data-theme="abendrot"]{--bg:#FBF3EC;--panel:#FFFBF7;--ink:#2A1F33;--mute:#736176;--line:#F0E3D8;--line2:#E0CFC2;--cell:#F4E8DD;--moo:#F4E8DD;--acc:#E97A40;--accT:#A8421C;--hi:#2A1F33;--on:#FBF3EC;color-scheme:light}}
+/* Mitternacht (ab 250 Tagen): fast Schwarz mit hellem Violett-Blau */
+:root[data-theme="mitternacht"],[data-theme="mitternacht"]{--bg:#08080C;--panel:#121218;--ink:#F2F2F7;--mute:#9C9CAD;--line:#1F1F29;--line2:#30303D;--cell:#191921;--moo:#282833;--acc:#9FA8F5;--accT:#AAB2F7;--hi:#F2F2F7;--on:#08080C;color-scheme:dark}
+@media (prefers-color-scheme:light){:root[data-theme="mitternacht"],[data-theme="mitternacht"]{--bg:#F7F7FA;--panel:#FFFFFF;--ink:#101018;--mute:#5F5F77;--line:#E6E6EE;--line2:#D2D2DE;--cell:#ECECF2;--moo:#ECECF2;--acc:#838DE8;--accT:#3D46B0;--hi:#101018;--on:#F7F7FA;color-scheme:light}}
