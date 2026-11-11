@@ -8,7 +8,7 @@ export const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 // Grenzen an einer Stelle (später auch für Gratis und Pro, siehe Roadmap Grundregel 3)
 export const TARGET_MAX=20; // höchstes Tagesziel, gleiche Grenze wie in der Datenbank
 
-export const RKEY="habits-rem"; // localStorage: an welchem Tag dieses Gerät schon erinnert hat
+export const RKEY="habits-rem"; // localStorage: Erinnerung aus der Zeit vor dem Profil (wird einmal übernommen und dann gelöscht)
 export const TKEY="mind-theme"; // localStorage: gewähltes Theme, damit die Seite gleich in der richtigen Farbe startet (auch in index.html)
 export const SKEY="mind-seen";  // localStorage: bis zu wie vielen Tagen dieses Gerät die Sammlung schon gesehen hat
 export const UNIT_MAX=20;       // längste Einheit, gleiche Grenze wie in der Datenbank

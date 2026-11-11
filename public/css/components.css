@@ -184,7 +184,7 @@ details.more summary{font-size:.9rem}
 .badge{padding:3px 12px;border-radius:var(--r-pill);background:var(--cell);font-size:.8rem;font-weight:600}
 .btn.sm{padding:8px 16px;font-size:.88rem;flex:none}
 .sg .note{margin:2px 0 8px}
-#remPerm{padding:0 0 8px;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+#remDev small{overflow:visible}
 .saved{margin-right:14px;opacity:0;transition:opacity var(--t-fade)}.saved.on{opacity:1}
 details.restore{margin:0;padding:14px 0 6px;border-top:1px solid var(--line)}
 details.restore summary{font-size:.95rem}
@@ -251,3 +251,8 @@ button.th:active{transform:scale(.97)}
 .thc .tp em{bottom:8px;height:18px;border-radius:7px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 #login{max-width:380px;margin:12vh auto;padding:0 20px}#login form{display:grid;gap:10px}#login h1{font-size:3rem;margin-bottom:28px}
+
+/* --- Installierbare App: ruhige Hinweise oben (ohne Netz, neue Version). Kein Popup, nichts blinkt. --- */
+#net{max-width:720px;margin:0 auto 14px;padding:10px 14px;border-radius:var(--r-field);background:var(--cell);color:var(--ink);font-weight:600}
+#net:empty{display:none}
+.upd{display:block;width:100%;max-width:720px;margin:0 auto 14px;padding:10px 14px;border-radius:var(--r-field);background:var(--cell);color:var(--ink);font-size:.82rem;font-weight:600;text-align:left;text-decoration:underline;text-underline-offset:3px}

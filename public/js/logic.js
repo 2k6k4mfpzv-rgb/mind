@@ -94,6 +94,13 @@ export const daysTotal=habits=>new Set(habits.flatMap(h=>Object.keys(h.done).fil
 export const themeOk=(key,n)=>!key||THEMES.some(t=>t[0]===key&&n>=t[2]); // Theme mit n Tagen frei? (leer = Standard, immer)
 export const nextTheme=n=>THEMES.find(t=>n<t[2])||null;                    // das nächste, das noch nicht frei ist
 
+// --- Push ---
+// Was geht auf diesem Gerät? e = {push: der Browser kann Push, ios, home: läuft als App vom Home-Bildschirm,
+// perm: Erlaubnis für Benachrichtigungen, sub: dieses Gerät ist angemeldet}
+// "on" = bekommt die Erinnerung, "off" = könnte, "blocked" = Benachrichtigungen gesperrt,
+// "home" = iPhone im Browser (Push geht dort nur als App vom Home-Bildschirm), "none" = der Browser kann es nicht
+export const pushMode=e=>!e.push?(e.ios&&!e.home?"home":"none"):e.perm==="denied"?"blocked":e.sub&&e.perm==="granted"?"on":"off";
+
 // --- Serie und Konstanz ---
 // Faire Serie: Ein Fehltag pro Woche (Mo bis So) ist ein Puffertag, die Serie pausiert dann nur.
 // Erst ein zweiter Fehltag in derselben Woche beendet sie. Heute zählt erst, wenn geschafft.

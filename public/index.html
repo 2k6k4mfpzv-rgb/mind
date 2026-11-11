@@ -6,6 +6,14 @@
 <meta name="theme-color" content="#FAF8F5" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141319" media="(prefers-color-scheme: dark)">
 <title>MIND — Habit Tracker</title>
+<!-- Installierbare App: Name, Symbol und Farben (manifest.webmanifest), dazu die Angaben, die das iPhone braucht -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="MIND">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <!-- Gewähltes Theme sofort setzen, bevor die Seite gezeichnet wird (gleicher Eintrag wie TKEY in js/config.js) -->
 <script>try{var t=localStorage.getItem("mind-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preload" href="fonts/plus-jakarta-sans.woff2" as="font" type="font/woff2" crossorigin>
@@ -15,7 +23,9 @@
 <link rel="modulepreload" href="js/config.js">
 <link rel="modulepreload" href="js/logic.js">
 <link rel="modulepreload" href="js/state.js">
+<link rel="modulepreload" href="js/store.js">
 <link rel="modulepreload" href="js/data.js">
+<link rel="modulepreload" href="js/pwa.js">
 <link rel="modulepreload" href="js/ui/dom.js">
 <link rel="modulepreload" href="js/ui/render.js">
 <link rel="modulepreload" href="js/ui/toast.js">
@@ -39,6 +49,9 @@
 </div>
 <main id="app" hidden>
 <p class="note" id="err" role="alert" style="color:var(--ink)"></p>
+<!-- Ruhige Hinweise oben (kein Popup): ohne Netz, und wenn eine neue Version bereitliegt -->
+<p class="note" id="net" role="status"></p>
+<button class="upd" id="upd" hidden>Neue Version von MIND. Tippen zum Aktualisieren.</button>
 
 <!-- Puls: Startseite Heute. Kacheln füllen sich beim Antippen, der Ring zeigt den ganzen Tag. -->
 <section class="view" id="v-heute">
@@ -95,10 +108,9 @@
     </div>
     <div class="sg">
       <div class="cap">Erinnerung</div>
-      <label class="sr"><span>Tägliche Erinnerung<small>Wenn heute noch Habits offen sind</small></span><input type="checkbox" id="remOn" class="sw" role="switch"></label>
+      <label class="sr"><span>Tägliche Erinnerung<small>Eine Nachricht am Tag, nur wenn noch Habits offen sind</small></span><input type="checkbox" id="remOn" class="sw" role="switch"></label>
       <label class="sr"><span>Uhrzeit</span><input type="time" id="remTime" value="20:00"></label>
-      <p class="note" id="remNote">Funktioniert nur, solange MIND im Browser geöffnet ist.</p>
-      <button class="del" id="remPerm" hidden>Benachrichtigungen auf diesem Gerät erlauben</button>
+      <div class="sr" id="remDev" hidden><span>Dieses Gerät<small id="remNote" aria-live="polite"></small></span><button class="btn ghost sm" id="remBtn" hidden></button></div>
     </div>
     <div class="sg">
       <div class="cap">Daten</div>
@@ -145,8 +157,9 @@
 <dialog class="sheet" id="menu" aria-labelledby="mnT"><div class="shi" id="mnI"></div></dialog>
 </main>
 
-<!-- Supabase-Bibliothek, fest auf eine Version gepinnt. Die App selbst startet in js/app.js (Module, kein Build-Schritt). -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<!-- Supabase-Bibliothek, selbst gehostet (Version in js/vendor/LIES-MICH.txt), damit MIND ohne Netz startet.
+     Die App selbst startet in js/app.js (Module, kein Build-Schritt). -->
+<script src="js/vendor/supabase.js"></script>
 <script type="module" src="js/app.js"></script>
 </body>
 </html>
