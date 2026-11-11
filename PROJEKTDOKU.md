@@ -26,7 +26,7 @@ Supabase ->  Push-Dienst des Browsers (Apple, Google, Mozilla) -> Gerät   (Erin
 | **Cloudflare** (Workers, statische Dateien) | Veröffentlicht `public/` unter `mind.2k6k4mfpzv.workers.dev`. | Kostenlos, feste Adresse, kein eigener Server nötig. |
 | **Supabase** | Postgres-Datenbank und Login (E-Mail und Passwort). | Echte Datenbank und fertiges Login, kostenlos, Zugriffsschutz per Regel. |
 
-Für die Erinnerung läuft in Supabase eine kleine Server-Funktion (Edge Function `push-reminder`), die die Datenbank alle 5 Minuten anstößt. Sonst gibt es **keinen eigenen Server und keinen Build-Schritt**. Die App besteht aus einer HTML-Datei, CSS-Dateien und JavaScript-Modulen, die der Browser direkt lädt (kein Werkzeug dazwischen, das etwas zusammenbaut). Sie spricht über die Supabase-Bibliothek mit der Datenbank.
+Für die Erinnerung läuft in Supabase eine kleine Server-Funktion (Edge Function `push-reminder`), die die Datenbank jede Minute anstößt. Sonst gibt es **keinen eigenen Server und keinen Build-Schritt**. Die App besteht aus einer HTML-Datei, CSS-Dateien und JavaScript-Modulen, die der Browser direkt lädt (kein Werkzeug dazwischen, das etwas zusammenbaut). Sie spricht über die Supabase-Bibliothek mit der Datenbank.
 
 ## 3. Dateien im Repository
 ```
@@ -110,7 +110,7 @@ Tabelle `public.profiles` (seit 06.11.2026, eine Zeile pro Konto):
 | plan | text | `free` (Standard) oder `premium`. Aus der App nicht änderbar. |
 | rem_on | boolean | Erinnerung an/aus (Standard aus) |
 | rem_time | text | Uhrzeit der Erinnerung `HH:MM` (Standard `20:00`) |
-| rem_sent | date | An welchem Tag zuletzt erinnert wurde (höchstens eine Nachricht am Tag). Schreibt nur der Server, die App darf die Spalte nicht ändern. Seit 11.11.2026 |
+| rem_sent | date | An welchem Tag zuletzt erinnert wurde (höchstens eine Nachricht am Tag). Schreibt nur der Server, die App darf die Spalte nicht ändern. Ausnahme: Ändert sich `rem_time` auf eine Uhrzeit, die noch vor uns liegt, leert ein Trigger die Spalte (`docs/2026-11-11_erinnerung-uhrzeit.sql`), damit die neue Uhrzeit am selben Tag gilt. Seit 11.11.2026 |
 | theme | text | Gewähltes Theme aus der Sammlung: leer (Standard „Puls“) oder ein Schlüssel aus `THEMES` in `js/config.js` (`nebel`, `wald`, `sand`, `tiefsee`, `abendrot`, `mitternacht`). Ein unbekannter oder noch nicht freier Schlüssel wird in der App wie leer behandelt. Seit 10.11.2026 |
 | days_total | integer | Höchster je erreichter Stand an „Tagen insgesamt“ (Tage mit mindestens einem geschafften Habit). Die App erhöht ihn nur. So bleibt ein Theme frei, auch wenn später ein Habit mit seinen Haken gelöscht wird. Seit 10.11.2026 |
 | created_at | timestamptz | Anlegezeit |
@@ -127,7 +127,7 @@ Tabelle `public.push_subs` (seit 11.11.2026, eine Zeile pro Gerät, das die Erin
 | created_at | timestamptz | Anlegezeit |
 
 **Push-Erinnerung (seit 11.11.2026):**
-- Zeitplan: `pg_cron` ruft alle 5 Minuten `push_tick()` auf, das stößt über `pg_net` die Edge Function `push-reminder` an. Solange niemand die Erinnerung an hat und ein Gerät angemeldet ist, passiert nichts. Eine zweite Aufgabe löscht nachts alte Tipp-IDs.
+- Zeitplan: `pg_cron` ruft jede Minute `push_tick()` auf (seit 11.11.2026 abends, vorher alle 5 Minuten, `docs/2026-11-11_erinnerung-minutengenau.sql`), das stößt über `pg_net` die Edge Function `push-reminder` an. Solange niemand die Erinnerung an hat und ein Gerät angemeldet ist, passiert nichts. Eine zweite Aufgabe löscht nachts alte Tipp-IDs.
 - Die Edge Function (`supabase/functions/push-reminder`) prüft pro Profil mit `rem_on`: Ist in seiner Zeitzone die Uhrzeit erreicht und heute noch nichts gekommen? Dann markiert sie den Tag (`rem_sent`), schaut, was offen ist, und schickt an jedes angemeldete Gerät eine Nachricht. Ist nichts offen, kommt nichts. Meldet der Push-Dienst ein Gerät als abgemeldet, wird seine Zeile in `push_subs` gelöscht.
 - „Offen“ heißt dasselbe wie in der App: Die Funktion benutzt Kopien von `logic.js` und `config.js` (`sched()` und `ok()`). Ein Test prüft, dass die Kopien aktuell sind.
 - **Geheimnisse** stehen nirgends im Code oder im Repository. Sie liegen im Tresor der Datenbank (Supabase Vault): `mind_push_cron` (Losung, mit der die Datenbank die Funktion anstößt, die Datenbank hat sie selbst erzeugt) und `mind_vapid_public` / `mind_vapid_private` (Schlüsselpaar für Web Push, erzeugt die Funktion beim ersten Lauf). Die Funktionen `push_secrets()` und `push_keys_set()` darf nur der Server aufrufen. `push_key()` gibt der App den öffentlichen Schlüssel. Der Sicherheitscheck von Supabase meldet `push_key()` als Hinweis (eine Funktion mit erhöhten Rechten, die Angemeldete aufrufen dürfen). Das ist gewollt: Sie gibt nur den öffentlichen Schlüssel heraus.
