@@ -1,5 +1,5 @@
 // MIND – Push-Erinnerung (Supabase Edge Function "push-reminder").
-// Die Datenbank ruft diese Funktion alle 5 Minuten auf (pg_cron, siehe docs/2026-11-11_push.sql). Sie schaut, bei wem
+// Die Datenbank ruft diese Funktion jede Minute auf (pg_cron, siehe docs/2026-11-11_push.sql und docs/2026-11-11_erinnerung-minutengenau.sql). Sie schaut, bei wem
 // die eingestellte Uhrzeit erreicht ist, und schickt höchstens eine Nachricht am Tag, und nur wenn heute noch Habits
 // offen sind. Die Regeln und der Ablauf stehen in erinnerung.js, das Verschlüsseln in webpush.js. Hier wird nur
 // verbunden: Datenbank, Schlüssel, Push-Dienst.

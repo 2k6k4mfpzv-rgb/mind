@@ -490,9 +490,9 @@ async function run(){
     P.due(pr(),Z("2026-11-11T18:55:00")),P.due(pr(),Z("2026-11-11T19:00:00")),P.due(pr(),Z("2026-11-11T21:40:00")),
     P.due(pr({rem_sent:"2026-11-11"}),Z("2026-11-11T19:05:00")),P.due(pr({rem_sent:"2026-11-10"}),Z("2026-11-11T19:05:00")),P.due(pr({rem_on:false}),Z("2026-11-11T19:05:00"))],
     [null,"2026-11-11","2026-11-11",null,"2026-11-11",null]);
-  t("Der Server schaut alle 5 Minuten: 20:03 kommt um 20:00, und 23:58 kommt noch am selben Tag (um 23:55)",()=>[
-    P.due(pr({rem_time:"20:03"}),Z("2026-11-11T19:00:00")),P.due(pr({rem_time:"20:03"}),Z("2026-11-11T18:55:00")),
-    P.due(pr({rem_time:"23:58"}),Z("2026-11-11T22:50:00")),P.due(pr({rem_time:"23:58"}),Z("2026-11-11T22:55:00"))],
+  t("Minutengenau: 20:03 kommt um 20:03 und nicht um 20:02, und 23:58 kommt noch am selben Tag",()=>[
+    P.due(pr({rem_time:"20:03"}),Z("2026-11-11T19:03:00")),P.due(pr({rem_time:"20:03"}),Z("2026-11-11T19:02:00")),
+    P.due(pr({rem_time:"23:58"}),Z("2026-11-11T22:57:00")),P.due(pr({rem_time:"23:58"}),Z("2026-11-11T22:58:00"))],
     ["2026-11-11",null,null,"2026-11-11"]);
   const DAY="2026-11-11",hb=(name,o)=>Object.assign({id:name,name,days:ALL,created:"2026-01-01",target:1},o); // der 11.11.2026 ist ein Mittwoch (Tag 2)
   const rows=[hb("Offen"),hb("Erledigt"),hb("Teilweise",{target:3}),hb("Pausiert",{paused:[{from:"2026-11-10",to:null}]}),hb("Nur Mo und Di",{days:[0,1]}),

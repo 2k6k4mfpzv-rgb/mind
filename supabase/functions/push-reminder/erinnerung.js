@@ -4,9 +4,7 @@
 // So gilt für "geplant" und "geschafft" auf dem Server garantiert dieselbe Regel wie in der App.
 import {norm,sched,ok,parseDay} from "./logic.js";
 
-// Die Datenbank stößt die Funktion alle 5 Minuten an. Die eingestellte Uhrzeit wird auf dieses Raster abgerundet
-// (20:02 -> 20:00), damit auch 23:58 noch am selben Tag drankommt.
-export const TICK=5;
+// Die Datenbank stößt die Funktion jede Minute an. Die Erinnerung kommt deshalb in der eingestellten Minute.
 const MAXSUBS=10; // höchstens so viele Geräte pro Nutzer
 
 // Tag und Uhrzeit in der Zeitzone des Nutzers. Unbekannte oder leere Zeitzone: Europe/Berlin.
@@ -16,14 +14,13 @@ export function localNow(now,tz){
   const g=t=>p.find(x=>x.type===t).value;
   return {day:g("year")+"-"+g("month")+"-"+g("day"),hm:g("hour")+":"+g("minute")};
 }
-const grid=hm=>{const [h,m]=hm.split(":").map(Number);return String(h).padStart(2,"0")+":"+String(m-m%TICK).padStart(2,"0")};
 
 // Ist dieses Profil jetzt dran? Ja, wenn die Erinnerung an ist, die Uhrzeit erreicht ist und heute noch nichts kam.
 // Gibt den heutigen Tag des Nutzers zurück (JJJJ-MM-TT), sonst null.
 export function due(p,now){
   if(!p.rem_on)return null;
   const {day,hm}=localNow(now,p.timezone);
-  return hm>=grid(p.rem_time)&&p.rem_sent!==day?day:null;
+  return hm>=p.rem_time&&p.rem_sent!==day?day:null;
 }
 
 // Was ist heute noch offen? habits = Zeilen aus der Tabelle habits, counts = {habit_id: Anzahl heute}.

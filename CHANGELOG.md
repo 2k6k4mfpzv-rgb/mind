@@ -13,6 +13,11 @@ Private Habit-Tracker-Website. Frontend: `public/` (Gerüst `index.html`, dazu `
 
 ## Änderungen (neueste zuerst)
 
+### 2026-11-11 – Erinnerung kommt minutengenau
+- **Warum:** Paul: So kennt man es von anderen Apps, das 5-Minuten-Raster verwirrt (14:43 kam erst um 14:45 oder schon um 14:40).
+- **Was:** Die Datenbank stößt die Server-Funktion jetzt jede Minute an statt alle 5 (`docs/2026-11-11_erinnerung-minutengenau.sql`). In `erinnerung.js` entfällt das Abrunden der Uhrzeit. Die Funktion ist neu ausgerollt.
+- Kein Code der App geändert. Ändert keine Daten.
+
 ### 2026-11-11 – Erinnerung: Eine geänderte Uhrzeit gilt am selben Tag noch einmal
 - **Warum:** Paul bekam nach dem Umstellen der Uhrzeit keine Erinnerung. Am selben Tag war schon eine verschickt, und `profiles.rem_sent` (höchstens eine Nachricht am Tag) blieb stehen.
 - **Was:** Ein Trigger auf `profiles` leert `rem_sent`, wenn sich `rem_time` ändert und die neue Uhrzeit noch vor uns liegt (in der Zeitzone des Profils). Liegt sie schon hinter uns, bleibt alles, wie es ist: Es kommt keine zweite Nachricht sofort.
