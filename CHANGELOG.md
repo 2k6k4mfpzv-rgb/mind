@@ -5,12 +5,36 @@ Private Habit-Tracker-Website. Frontend: `public/` (Gerüst `index.html`, dazu `
 ## Aufbau
 | Teil | Ort |
 |---|---|
-| Webseite | `public/index.html`, `public/css/`, `public/js/` |
+| Webseite | `public/index.html`, `public/css/`, `public/js/`, `public/sw.js` (Service Worker), `public/manifest.webmanifest` |
+| Push-Erinnerung | `supabase/functions/push-reminder/` (Supabase Edge Function, von der Datenbank alle 5 Minuten angestoßen) |
 | Cloudflare-Konfiguration | `wrangler.jsonc` (Ordner `./public` wird veröffentlicht) |
 | Datenbank-Schema | `docs/schema.sql` und danach die Dateien `docs/JJJJ-MM-TT_*.sql` der Reihe nach |
 | Login | Supabase Auth, E-Mail und Passwort, Registrierung gesperrt |
 
 ## Änderungen (neueste zuerst)
+
+### 2026-11-11 – Installierbare App: offline nutzbar, Haken werden nachgeschickt, Push-Erinnerung vom Server
+- **Warum:** Paket 2 von vier (Vault: `Habit Tracker/MIND – Fable Auftrag 2 (Funktionen komplett).md`), Teil B. Pauls Entscheidungen: MIND wird eine installierbare Web-App statt einer App aus dem App Store (07.11.), Push nur, wenn noch etwas offen ist (10.11.). Damit ist A4 gebaut und MIND ohne KI funktional komplett.
+- **Installierbar:** `public/manifest.webmanifest` (Name, eigenes Fenster, Farben), App-Symbol im Puls-Stil (der Tagesring in Koralle auf dunklem Grund, `public/icons/`, Vorlage `icon.svg`, PNG-Größen aus `docs/icons.py`), Angaben für das iPhone in `index.html` (Home-Bildschirm, Titel, Statusleiste).
+- **Ohne Netz starten:** Der Service Worker `public/sw.js` legt alle Dateien der App auf dem Gerät ab. Die Supabase-Bibliothek liegt jetzt selbst gehostet in `public/js/vendor/` (gleiche Version 2.45.4, Prüfsumme mit zwei Quellen verglichen), es wird nichts mehr von fremden Servern geladen.
+- **Stand vom Gerät:** Die App merkt sich Habits, Haken und Profil auf dem Gerät (`public/js/store.js`, IndexedDB) und zeigt sie beim Start sofort, noch bevor die Anmeldung geprüft ist. Das macht den Start auch mit Netz schneller. Beim Abmelden wird alles gelöscht.
+  - Mit der echten Supabase-Bibliothek nachgestellt: Ohne Netz und mit abgelaufener Anmeldung meldet sie erst nach etwa 50 Sekunden „abgemeldet“, die Anmeldung bleibt aber gespeichert. In genau diesem Fall bleibt die App beim Stand vom Gerät, statt den Login zu zeigen.
+- **Haken ohne Netz:** Jeder Tipp ist ein Auftrag mit eigener ID in einer Warteschlange, die auf dem Gerät gespeichert ist. Ohne Netz bleibt der Haken stehen (vorher wurde er zurückgenommen) und oben steht ruhig „Offline. 2 Haken werden nachgeschickt, sobald du wieder Netz hast.“ Sobald das Netz zurück ist, geht alles in der richtigen Reihenfolge raus.
+  - **Doppelsicher:** Die Datenbank merkt sich die IDs (`checkin_ops`). Kommt derselbe Tipp zweimal an, weil nur die Antwort verloren ging, zählt er einmal.
+  - Hat ein anderes Gerät inzwischen auch abgehakt, zählen beide. Wurde das Habit woanders gelöscht, wird der Haken zurückgenommen und gemeldet.
+  - Alles andere (Habit ändern, anlegen, löschen, Einstellungen) braucht weiter Netz: Es wird zurückgenommen, oben steht „Kein Netz. Das wurde nicht gespeichert.“
+- **Neue Version:** Sie wird im Hintergrund vollständig geladen. Oben erscheint „Neue Version von MIND. Tippen zum Aktualisieren.“ Kein Popup. Wer nicht tippt, bekommt sie beim nächsten Öffnen. Damit der Browser eine neue Version überhaupt bemerkt, steht in `sw.js` eine Prüfsumme über alle Dateien (`VERSION`), über die ein Test wacht.
+- **Push-Erinnerung (ersetzt die alte, die nur bei offener Seite ging):** Zur eingestellten Uhrzeit kommt höchstens eine Nachricht am Tag, und nur wenn dann noch Habits offen sind: „Noch offen: Wasser, Lesen und 2 weitere“. Ist alles erledigt, kommt nichts. Kein Nachhaken, keine roten Punkte.
+  - In „Ich“ gilt der Schalter für alle Geräte. Neu ist die Zeile „Dieses Gerät“: bekommt die Erinnerung (Ausschalten), bekommt sie noch nicht (Einschalten), Benachrichtigungen gesperrt, iPhone erst zum Home-Bildschirm, Browser kann kein Push.
+  - Auf dem Server: Edge Function `supabase/functions/push-reminder`, die die Datenbank alle 5 Minuten anstößt. Sie rechnet „offen“ mit denselben Dateien wie die App (Kopien von `logic.js` und `config.js`, ein Test prüft, dass sie gleich sind), also zählen Pausen, Wochentage und frühere Einstellungen genauso. Uhrzeit und Tag gelten in der Zeitzone aus dem Profil.
+  - Die Nachricht wird für jedes Gerät einzeln verschlüsselt (Web Push, RFC 8291 und 8292), ohne fremde Bibliothek. Der Test rechnet das Beispiel aus dem Standard nach.
+  - **Keine Schlüssel im Code oder im Repository, und Paul muss keinen eintragen:** Die Losung für den Aufruf erzeugt die Datenbank selbst, das Schlüsselpaar die Funktion beim ersten Lauf. Beides liegt im Tresor der Datenbank (Supabase Vault).
+  - Abhaken direkt aus der Benachrichtigung („Erledigt“-Knopf) gibt es bewusst nicht: Das iPhone kann es bei Web-Apps nicht, und es wäre ein zweiter Weg mit eigener Anmeldung.
+- **Datenbank (noch nicht ausgeführt):** `docs/2026-11-11_haken-ohne-netz.sql` (Tabelle `checkin_ops`, die zwei Haken-Funktionen bekommen den freiwilligen Wert `p_op`) und `docs/2026-11-11_push.sql` (Tabelle `push_subs`, Spalte `profiles.rem_sent`, Tresor, Zeitplan mit `pg_cron` und `pg_net`). Bestehende Daten werden nicht verändert, der alte Code auf `main` läuft mit beidem weiter. **Die erste Datei muss laufen, bevor der neue Code getestet wird**, sonst schlägt das Abhaken fehl. Für Push dazu die zweite Datei und die ausgerollte Funktion.
+- **Aufgeräumt:** Die alte Erinnerung (`setInterval` in `ich.js`) ist weg. Der alte Browser-Eintrag `habits-rem` wird einmal ins Profil übernommen und gelöscht.
+- **Tests:** `tests/logik.html` hat 141 Tests (vorher 95). Neu: Warteschlange ohne Netz (sammeln, nachschicken, doppelsicher, Reihenfolge, anderes Gerät, Neuladen mit wartenden Haken, gelöschtes Habit), Start vom Gerät ohne Netz und Rückkehr, Abmelden löscht alles, Zeile „Dieses Gerät“, Regeln der Erinnerung (Zeitzone, Sommerzeit, Mitternacht, 5-Minuten-Raster, was offen ist, Text), ganze Durchläufe mit nachgebauter Datenbank (einmal am Tag, nichts offen, Gerät abgemeldet, Push-Dienst nicht erreichbar), Verschlüsselung gegen das Beispiel aus RFC 8291 und mit Gegenprobe, Ausweis des Servers, Liste und Prüfsumme im Service Worker, Manifest. Zwei alte Tests sind angepasst, weil sich das Verhalten bewusst geändert hat (Haken ohne Netz bleiben jetzt stehen).
+- **Teststand:** 141 von 141 Tests grün. Im Browser geprüft: Service Worker installiert sich, die App lädt bei abgeschaltetem Server vollständig, eine neue Version wird erkannt, wartet und übernimmt auf Tipp. Mit Testdaten angesehen (Handy 375 px und Mac 1280 px, hell und dunkel). **Nicht geprüft:** die App angemeldet gegen die echte Datenbank, die zwei SQL-Dateien und die Server-Funktion in der echten Umgebung (laufen erst nach Pauls Ja), eine echte Push auf einem echten Gerät, Installieren und Statusleiste auf dem iPhone.
+- **Nichts sonst geändert.** Mit Netz verhält sich die App wie vorher.
 
 ### 2026-11-10 – Puls Schritt 2 und 3: Kachel lange drücken, Pausieren, Einheit, Sammlung mit Themes
 - **Warum:** Paket 2 von vier (Vault: `Habit Tracker/MIND – Fable Auftrag 2 (Funktionen komplett).md`), Teil A. Damit ist das Redesign „Puls“ funktional komplett. Pauls Entscheidungen vom 10.11.: Pausieren mit optionalem Enddatum, Bearbeiten als Blatt auf „Heute“, Einheit in Einzahl und Mehrzahl, 6 Themes gratis nach 7, 30, 60, 100, 150 und 250 Tagen insgesamt.
