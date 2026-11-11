@@ -110,7 +110,7 @@ Tabelle `public.profiles` (seit 06.11.2026, eine Zeile pro Konto):
 | plan | text | `free` (Standard) oder `premium`. Aus der App nicht änderbar. |
 | rem_on | boolean | Erinnerung an/aus (Standard aus) |
 | rem_time | text | Uhrzeit der Erinnerung `HH:MM` (Standard `20:00`) |
-| rem_sent | date | An welchem Tag zuletzt erinnert wurde (höchstens eine Nachricht am Tag). Schreibt nur der Server, die App darf die Spalte nicht ändern. Seit 11.11.2026 |
+| rem_sent | date | An welchem Tag zuletzt erinnert wurde (höchstens eine Nachricht am Tag). Schreibt nur der Server, die App darf die Spalte nicht ändern. Ausnahme: Ändert sich `rem_time` auf eine Uhrzeit, die noch vor uns liegt, leert ein Trigger die Spalte (`docs/2026-11-11_erinnerung-uhrzeit.sql`), damit die neue Uhrzeit am selben Tag gilt. Seit 11.11.2026 |
 | theme | text | Gewähltes Theme aus der Sammlung: leer (Standard „Puls“) oder ein Schlüssel aus `THEMES` in `js/config.js` (`nebel`, `wald`, `sand`, `tiefsee`, `abendrot`, `mitternacht`). Ein unbekannter oder noch nicht freier Schlüssel wird in der App wie leer behandelt. Seit 10.11.2026 |
 | days_total | integer | Höchster je erreichter Stand an „Tagen insgesamt“ (Tage mit mindestens einem geschafften Habit). Die App erhöht ihn nur. So bleibt ein Theme frei, auch wenn später ein Habit mit seinen Haken gelöscht wird. Seit 10.11.2026 |
 | created_at | timestamptz | Anlegezeit |
