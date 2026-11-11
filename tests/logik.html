@@ -14,7 +14,7 @@ iframe{position:absolute;left:-9999px;width:390px;height:844px;border:0}
 </head>
 <body>
 <h1>MIND – Tests</h1>
-<p>Lädt die echte App (<code>public/index.html</code> mit ihren Modulen) mit nachgebauter Datenbank (<code>tests/mock-supabase.js</code>) und prüft Rechen-Logik, Datenschicht und die neuen Bedienwege (Blatt der Kachel, Sammlung). Echte Daten werden nie berührt. <a href="app.html">App mit Testdaten ansehen</a></p>
+<p>Lädt die echte App (<code>public/index.html</code> mit ihren Modulen) mit nachgebauter Datenbank (<code>tests/mock-supabase.js</code>) und prüft Rechen-Logik, Datenschicht, Bedienwege (Blatt der Kachel, Sammlung), Haken ohne Netz, den Start vom Gerät, die Push-Erinnerung des Servers (<code>supabase/functions/push-reminder</code>) und den Service Worker. Echte Daten werden nie berührt. <a href="app.html">App mit Testdaten ansehen</a></p>
 <p id="sum">Läuft …</p>
 <div id="out"></div>
 <iframe id="app" title="App im Test"></iframe>
@@ -42,18 +42,21 @@ async function ta(name,fn,want){let got;try{got=await fn()}catch(e){got="Fehler:
 // App mit nachgebauter Datenbank laden und warten, bis sie angemeldet und geladen ist.
 // Danach die Module der laufenden App holen (dieselben Objekte, mit denen die App arbeitet):
 // S = state.js, L = logic.js, D = data.js, R = ui/render.js, V = ui/verlauf.js
-async function boot(){
+// pre = Script, das vor der nachgebauten Datenbank läuft (z. B. "kein Netz von Anfang an").
+// wait = false: nicht auf geladene Habits warten (z. B. wenn der Login erscheinen soll).
+async function boot(pre="",wait=true){
   const html=await (await fetch("../public/index.html",{cache:"no-store"})).text();
-  const app=html.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase[^"]*"><\/script>/,'<script src="/tests/mock-supabase.js"><\/script>').replace(/(href|src)="(css|js|fonts)\//g,'$1="/public/$2/').replace("<head>",'<head><base href="/public/">'+SHIM);
+  const app=html.replace(/<script src="js\/vendor\/supabase\.js"><\/script>/,()=>pre+'<script src="/tests/mock-supabase.js"><\/script>').replace(/(href|src)="(css|js|fonts|icons)\//g,'$1="/public/$2/').replace("<head>",'<head><base href="/public/">'+SHIM);
   if(!app.includes("/tests/mock-supabase.js"))throw new Error("Supabase-Zeile in index.html nicht gefunden");
   loads=0;
   await new Promise(r=>{fr.onload=()=>{loads++;W=fr.contentWindow;r()};fr.srcdoc=app});
-  await waitLoaded();
+  if(wait)await waitLoaded();else{await sleep(600);await mods()}
 }
+const mods=async()=>{[S,L,D,R,V]=await W.eval(`Promise.all(["state","logic","data","ui/render","ui/verlauf"].map(m=>import("/public/js/"+m+".js")))`)};
 async function waitLoaded(){
   for(let i=0;i<80;i++){
     await sleep(50);
-    try{[S,L,D,R,V]=await W.eval(`Promise.all(["state","logic","data","ui/render","ui/verlauf"].map(m=>import("/public/js/"+m+".js")))`);if(S.state.habits.length)return}catch(e){}
+    try{await mods();if(S.state.habits.length)return}catch(e){}
   }
   throw new Error("App lädt nicht");
 }
@@ -183,17 +186,20 @@ async function run(){
     S.ui.openId=null;S.ui.offset=0;R.render();
     return [log().map(x=>x.rpc||x.op),L.cnt(h,k),MOCK().count(h.id,k)]},[["checkin_set"],0,0]);
 
-  group("Datenschicht: Fehler werden zurückgerollt, ruhig gemeldet");
-  await ta("Kein Netz beim Abhaken: Die Kachel geht zurück, oben steht ein Hinweis",async()=>{
+  group("Datenschicht: ohne Netz bleiben Haken stehen, alles andere wird zurückgerollt und ruhig gemeldet");
+  await ta("Kein Netz beim Abhaken: Der Haken bleibt stehen und wartet, oben steht ruhig „Offline“ (keine Fehlermeldung)",async()=>{
     const [i,h]=at(h=>h.target>=6&&sched(h,S.today));await D.setCount(h,TD,2);R.render();
-    net(false);tile(i).click();const sofort=L.cnt(h,TD);await quiet();net(true);
-    return [sofort,L.cnt(h,TD),MOCK().count(h.id,TD),err().startsWith("Speichern fehlgeschlagen"),tile(i).querySelector(".cnt").textContent]},[3,2,2,true,"2/6"]);
+    net(false);tile(i).click();const sofort=L.cnt(h,TD);await quiet();
+    return [sofort,L.cnt(h,TD),MOCK().count(h.id,TD),err(),$("net").textContent,tile(i).querySelector(".cnt").textContent]},[3,3,2,"","Offline. 1 Haken wird nachgeschickt, sobald du wieder Netz hast.","3/6"]);
+  await ta("Netz wieder da: Der Haken wird nachgeschickt, der Hinweis verschwindet",async()=>{
+    const [i,h]=at(h=>h.target>=6&&sched(h,S.today));net(true);await D.flush();
+    return [L.cnt(h,TD),MOCK().count(h.id,TD),$("net").textContent]},[3,3,""]);
+  await ta("Kein Netz beim Bearbeiten: Der alte Name kommt zurück, oben steht warum",async()=>{
+    const h=H()[3],name=h.name;net(false);edit(3,{name:"Geht nicht"});const sofort=h.name;await quiet();net(true);
+    return [sofort,h.name===name,$("grid").textContent.includes("Geht nicht"),err()]},["Geht nicht",true,false,"Kein Netz. Das wurde nicht gespeichert."]);
   await ta("Der nächste erfolgreiche Tipp räumt den Hinweis wieder weg",async()=>{
     const [i,h]=at(h=>h.target>=6&&sched(h,S.today));tile(i).click();await quiet();
-    return [L.cnt(h,TD),err()]},[3,""]);
-  await ta("Kein Netz beim Bearbeiten: Der alte Name kommt zurück",async()=>{
-    const h=H()[3],name=h.name;net(false);edit(3,{name:"Geht nicht"});const sofort=h.name;await quiet();net(true);
-    return [sofort,h.name===name,$("grid").textContent.includes("Geht nicht")]},["Geht nicht",true,false]);
+    return [L.cnt(h,TD),err(),$("net").textContent]},[4,"",""]);
   await ta("Kein Netz beim Löschen: Das Habit ist wieder da, an derselben Stelle",async()=>{
     const h=H()[4],n=H().length;net(false);D.deleteHabit(h);const sofort=H().length;await quiet();net(true);
     return [sofort===n-1,H().length===n,H()[4]===h]},[true,true,true]);
@@ -372,6 +378,240 @@ async function run(){
     S.state.prof.theme="wald";R.render();const a=root().dataset.theme;$("out").click();await sleep(300);
     return [a,root().dataset.theme,localStorage.getItem("mind-theme"),$("app").hidden]},["wald",undefined,null,true]);
   localStorage.removeItem("mind-seen");
+
+  // ---------- Installierbare App: Haken ohne Netz, Start vom Gerät, Push-Erinnerung, Service Worker ----------
+  await boot();
+  const TP=S.TI,netText=()=>$("net").textContent,byId=id=>H().find(h=>h.id===id),big=()=>at(h=>h.target>=6&&sched(h,S.today));
+  const dev=()=>W.eval('import("/public/js/store.js")'); // der Speicher auf dem Gerät
+  const online=async()=>{W.MOCK_FAIL=W.MOCK_FAIL_TAPS=W.MOCK_LOSE=false;await D.loadProfile()}; // wieder Netz, und die App hat es gemerkt
+  const visible=()=>Object.defineProperty(W.document,"hidden",{get:()=>false,configurable:true});
+
+  group("Ohne Netz: Haken bleiben stehen und werden nachgeschickt");
+  await ta("Mehrere Tipps ohne Netz sammeln sich in der Warteschlange",async()=>{
+    const [i,h]=big();await D.setCount(h,TP,1);R.render();
+    net(false);tile(i).click();tile(i).click();tile(i).click();await quiet();
+    return [L.cnt(h,TP),MOCK().count(h.id,TP),D.net(),netText(),err()]},[4,1,{off:true,n:3},"Offline. 3 Haken werden nachgeschickt, sobald du wieder Netz hast.",""]);
+  await ta("Die Warteschlange liegt auf dem Gerät, jeder Tipp hat eine eigene ID",async()=>{
+    const ops=await (await dev()).get("ops");
+    return [ops.length,new Set(ops.map(o=>o.id)).size,ops.every(o=>/^[0-9a-f-]{36}$/.test(o.id)&&o.add===1&&o.day===TP)]},[3,3,true]);
+  await ta("Netz wieder da: Alles wird von selbst nachgeschickt, der Hinweis verschwindet",async()=>{
+    const id=big()[1].id;visible();net(true);W.dispatchEvent(new W.Event("online"));await sleep(800);
+    return [L.cnt(byId(id),TP),MOCK().count(id,TP),D.net(),netText(),(await (await dev()).get("ops")).length]},[4,4,{off:false,n:0},"",0]);
+  await ta("Doppelsicher: Der Tipp kommt an, nur die Antwort geht verloren. Beim Nachschicken zählt er nicht nochmal",async()=>{
+    const [i,h]=big();await D.setCount(h,TP,1);R.render();
+    W.MOCK_LOSE=true;tile(i).click();await quiet();const mitten=[L.cnt(h,TP),MOCK().count(h.id,TP),D.net().n];
+    W.MOCK_LOSE=false;await D.flush();
+    return [mitten,L.cnt(h,TP),MOCK().count(h.id,TP),D.net().n]},[[2,2,1],2,2,0]);
+  await ta("Zurück auf 0 und wieder hoch, beides ohne Netz: Die Reihenfolge bleibt",async()=>{
+    const [i,h]=big();await D.setCount(h,TP,h.target);R.render();
+    net(false);tile(i).click();tile(i).click();await quiet();const ohne=[L.cnt(h,TP),MOCK().count(h.id,TP)===h.target];
+    net(true);await D.flush();
+    return [ohne,L.cnt(h,TP),MOCK().count(h.id,TP)]},[[1,true],1,1]);
+  await ta("Ein anderes Gerät hat inzwischen auch abgehakt: Beide zählen (1 + 1 vom Handy + 2 von hier = 4)",async()=>{
+    const [i,h]=big();await D.setCount(h,TP,1);R.render();
+    net(false);tile(i).click();tile(i).click();await quiet();
+    MOCK().checkins.find(c=>c.habit_id===h.id&&c.day===TP).count=2;
+    net(true);await D.load();
+    return [L.cnt(byId(h.id),TP),MOCK().count(h.id,TP)]},[4,4]);
+  await ta("Neu laden, während ein Haken noch wartet: Stand vom Server und der wartende Haken zusammen",async()=>{
+    const [i,h]=big();await D.setCount(h,TP,2);R.render();
+    W.MOCK_FAIL_TAPS=true;tile(i).click();await quiet();
+    MOCK().checkins.find(c=>c.habit_id===h.id&&c.day===TP).count=3; // das Handy hat inzwischen 1× abgehakt
+    const ok=await D.load(),mitten=[ok,L.cnt(byId(h.id),TP),MOCK().count(h.id,TP),D.net().n];
+    W.MOCK_FAIL_TAPS=false;await D.flush();
+    return [mitten,L.cnt(byId(h.id),TP),MOCK().count(h.id,TP)]},[[true,4,3,1],4,4]);
+  await ta("Habit inzwischen woanders gelöscht: Der wartende Haken wird beim Nachschicken zurückgenommen und gemeldet",async()=>{
+    const [i,h]=at(h=>h.target===1&&sched(h,S.today)&&!L.cnt(h,TP)),keep=MOCK().habits.slice();
+    net(false);tile(i).click();await quiet();MOCK().habits=keep.filter(x=>x.id!==h.id);
+    net(true);await D.flush();const r=[L.cnt(h,TP),D.net().n,err().startsWith("Speichern fehlgeschlagen")];
+    MOCK().habits=keep;await online();return r},[0,0,true]);
+  await ta("Etwas anderes ohne Netz ändern geht nicht: Es wird zurückgenommen, oben steht warum",async()=>{
+    const h=H()[1],name=h.name;net(false);await D.updateHabit(h,{name:"Geht nicht"});const r=[h.name===name,err(),netText()];
+    await online();return [...r,err(),netText()]},[true,"Kein Netz. Das wurde nicht gespeichert.","Offline. Abhaken geht trotzdem und wird nachgeschickt.","",""]);
+
+  group("Start: Die App zeigt sofort den Stand vom Gerät, auch ohne Netz");
+  await ta("Ohne Netz starten (Anmeldung abgelaufen, lässt sich nicht erneuern): Stand von zuletzt, der wartende Haken ist noch da",async()=>{
+    const [i,h]=big();await D.setCount(h,TP,1);R.render();net(false);tile(i).click();await sleep(500); // der Stand wird kurz nach jeder Änderung abgelegt
+    const ids=H().map(h=>h.id).join(),db=JSON.stringify({habits:MOCK().habits,checkins:MOCK().checkins,profiles:MOCK().profiles});
+    localStorage.setItem("sb-test-auth-token","{}"); // so merkt sich Supabase die Anmeldung im Browser
+    await boot(`<script>window.MOCK_DATA=${db};window.MOCK_FAIL=true;window.MOCK_LOGGED_OUT=true<\/script>`);
+    return [$("app").hidden,$("login").hidden,H().map(h=>h.id).join()===ids,L.cnt(byId(h.id),S.TI),MOCK().count(h.id,S.TI),D.net(),netText().startsWith("Offline. 1 Haken wird"),$("hey").textContent]},[false,true,true,2,1,{off:true,n:1},true,"Hey Paul"]);
+  await ta("Netz und Anmeldung sind wieder da: Der Haken wird nachgeschickt, alles ist wieder aktuell",async()=>{
+    const id=big()[1].id;W.MOCK_FAIL=false;
+    W.supabase.createClient().auth.cb("TOKEN_REFRESHED",{user:{email:"test@example.com"}});await sleep(800);
+    return [L.cnt(byId(id),S.TI),MOCK().count(id,S.TI),D.net(),netText()]},[2,2,{off:false,n:0},""]);
+  await ta("Abmelden löscht den Stand und die Warteschlange vom Gerät",async()=>{
+    await sleep(400);const st=await dev(),vorher=!!(await st.get("snap"));
+    $("out").click();await sleep(500);
+    return [vorher,await st.get("snap"),await st.get("ops"),$("app").hidden,localStorage.getItem("sb-test-auth-token")]},[true,undefined,undefined,true,null]);
+  await ta("Wirklich abgemeldet: Der Login erscheint, vom Gerät wird nichts gezeigt",async()=>{
+    await boot(`<script>window.MOCK_LOGGED_OUT=true<\/script>`,false);
+    return [$("login").hidden,$("app").hidden,H().length]},[false,true,0]);
+
+  group("Erinnerung: Push vom Server statt offener Seite");
+  await boot();
+  const I=await W.eval('import("/public/js/ui/ich.js")');
+  t("Was geht auf diesem Gerät? (iPhone im Browser, iPhone als App, gesperrt, angemeldet, Browser ohne Push)",()=>[
+    {push:false,ios:true,home:false},{push:true,ios:true,home:true,perm:"default"},{push:true,perm:"denied",sub:true},
+    {push:true,perm:"granted",sub:true},{push:true,perm:"granted",sub:false},{push:false,ios:false},{push:false,ios:true,home:true}].map(L.pushMode),
+    ["home","off","blocked","on","off","none","none"]);
+  await ta("Schalter an: gilt im Profil für alle Geräte, die Zeile „Dieses Gerät“ erscheint",async()=>{
+    const vorher=$("remDev").hidden;$("remOn").click();await quiet();
+    return [vorher,$("remDev").hidden,MOCK().profiles[0].rem_on,$("remTime").disabled]},[true,false,true,false]);
+  t("Die Zeile sagt ehrlich, was auf diesem Gerät geht, und zeigt nur dann einen Knopf, wenn er etwas tun kann",()=>
+    [["on",/^Bekommt die Erinnerung$/],["off",/noch nicht/],["blocked",/gesperrt/],["home",/Zum Home-Bildschirm/],["none",/kann keine Push/],["server",/noch nicht eingerichtet/]]
+      .map(([m,re])=>{I.devUi(m);return m+":"+re.test($("remNote").textContent)+":"+($("remBtn").hidden?"":$("remBtn").textContent)}),
+    ["on:true:Ausschalten","off:true:Einschalten","blocked:true:","home:true:","none:true:","server:true:Einschalten"]);
+  await ta("Uhrzeit ändern wird im Profil gespeichert",async()=>{
+    $("remTime").value="07:30";$("remTime").dispatchEvent(new W.Event("change"));await quiet();return MOCK().profiles[0].rem_time},"07:30");
+  await ta("Anmeldung eines Geräts: eine Zeile pro Gerät, Ausschalten löscht sie",async()=>{
+    const sub={endpoint:"https://fcm.googleapis.com/fcm/send/abc",keys:{p256dh:"BAlt",auth:"alt"}};
+    const a=await D.savePush(sub),b=await D.savePush({...sub,keys:{p256dh:"BNeu",auth:"neu"}}),n=MOCK().push_subs.length,k=MOCK().push_subs[0].p256dh;
+    await D.dropPush(sub.endpoint);return [a,b,n,k,MOCK().push_subs.length,await D.pushKey()]},[true,true,1,"BNeu",0,"BMockSchluessel"]);
+  await ta("Schalter aus: im Profil gespeichert, die Zeile verschwindet",async()=>{
+    $("remOn").click();await quiet();return [$("remDev").hidden,MOCK().profiles[0].rem_on,$("remTime").disabled]},[true,false,true]);
+  await ta("Alte Erinnerung aus dem Browser (aus der Zeit vor dem Profil) wird einmal übernommen und dann gelöscht",async()=>{
+    localStorage.setItem("habits-rem",JSON.stringify({on:true,time:"19:30",last:"2026-01-01"}));await boot();await quiet();
+    return [MOCK().profiles[0].rem_on,MOCK().profiles[0].rem_time,localStorage.getItem("habits-rem")]},[true,"19:30",null]);
+
+  // Ab hier wird der Code der Server-Funktion geprüft (supabase/functions/push-reminder). Er läuft hier im Browser,
+  // weil er nichts braucht, was es nur auf dem Server gibt.
+  const FN="../supabase/functions/push-reminder/",P=await import(FN+"erinnerung.js"),WP=await import(FN+"webpush.js");
+  group("Push-Erinnerung auf dem Server: wann und woran erinnert wird");
+  await ta("Der Server rechnet mit denselben Dateien wie die App (logic.js und config.js sind aktuelle Kopien)",async()=>{
+    const same=async f=>(await (await fetch("../public/js/"+f,{cache:"no-store"})).text())===(await (await fetch(FN+f,{cache:"no-store"})).text());
+    return [await same("logic.js"),await same("config.js")]},[true,true]);
+  const Z=s=>new Date(s+"Z"),pr=o=>Object.assign({rem_on:true,rem_time:"20:00",timezone:"Europe/Berlin",rem_sent:null},o);
+  t("Uhrzeit und Tag gelten in der Zeitzone des Nutzers (Winterzeit, Sommerzeit, über Mitternacht, andere Zone, unbekannte Zone)",()=>[
+    P.localNow(Z("2026-11-11T19:02:00"),"Europe/Berlin"),P.localNow(Z("2026-07-01T18:00:00"),"Europe/Berlin"),P.localNow(Z("2026-11-11T23:30:00"),"Europe/Berlin"),
+    P.localNow(Z("2026-11-11T19:02:00"),"America/New_York"),P.localNow(Z("2026-11-11T19:02:00"),"Gibt/Es-Nicht"),P.localNow(Z("2026-11-11T23:00:00"),"")].map(x=>x.day+" "+x.hm),
+    ["2026-11-11 20:02","2026-07-01 20:00","2026-11-12 00:30","2026-11-11 14:02","2026-11-11 20:02","2026-11-12 00:00"]);
+  t("Dran ist man ab der eingestellten Uhrzeit, einmal am Tag, nur wenn die Erinnerung an ist",()=>[
+    P.due(pr(),Z("2026-11-11T18:55:00")),P.due(pr(),Z("2026-11-11T19:00:00")),P.due(pr(),Z("2026-11-11T21:40:00")),
+    P.due(pr({rem_sent:"2026-11-11"}),Z("2026-11-11T19:05:00")),P.due(pr({rem_sent:"2026-11-10"}),Z("2026-11-11T19:05:00")),P.due(pr({rem_on:false}),Z("2026-11-11T19:05:00"))],
+    [null,"2026-11-11","2026-11-11",null,"2026-11-11",null]);
+  t("Der Server schaut alle 5 Minuten: 20:03 kommt um 20:00, und 23:58 kommt noch am selben Tag (um 23:55)",()=>[
+    P.due(pr({rem_time:"20:03"}),Z("2026-11-11T19:00:00")),P.due(pr({rem_time:"20:03"}),Z("2026-11-11T18:55:00")),
+    P.due(pr({rem_time:"23:58"}),Z("2026-11-11T22:50:00")),P.due(pr({rem_time:"23:58"}),Z("2026-11-11T22:55:00"))],
+    ["2026-11-11",null,null,"2026-11-11"]);
+  const DAY="2026-11-11",hb=(name,o)=>Object.assign({id:name,name,days:ALL,created:"2026-01-01",target:1},o); // der 11.11.2026 ist ein Mittwoch (Tag 2)
+  const rows=[hb("Offen"),hb("Erledigt"),hb("Teilweise",{target:3}),hb("Pausiert",{paused:[{from:"2026-11-10",to:null}]}),hb("Nur Mo und Di",{days:[0,1]}),
+    hb("Startet morgen",{created:"2026-11-12"}),hb("Pause vorbei",{paused:[{from:"2026-11-01",to:"2026-11-10"}]}),
+    hb("Galt früher nur montags",{settings_log:[{until:"2026-11-12",days:[0],target:1}]}),hb("Ziel war früher 1",{target:3,settings_log:[{until:"2026-11-12",days:ALL,target:1}]})];
+  const counts={Erledigt:1,Teilweise:2,"Ziel war früher 1":1};
+  t("Offen heißt: heute geplant und Tagesziel nicht erreicht (Pausen, Wochentage, Start und frühere Einstellungen zählen wie in der App)",()=>
+    P.openToday(rows,counts,DAY).map(h=>h.name),["Offen","Teilweise","Pause vorbei"]);
+  t("Die App kommt für dieselben Habits zum selben Ergebnis",()=>
+    rows.map(r=>L.norm({...r,done:counts[r.id]?{[DAY]:counts[r.id]}:{}},DAY)).filter(h=>L.sched(h,L.parseDay(DAY))&&!L.ok(h,DAY)).map(h=>h.name),["Offen","Teilweise","Pause vorbei"]);
+  t("Die Nachricht ist ruhig und nennt höchstens drei Habits",()=>[1,3,4,5].map(n=>P.text(rows.slice(0,n)).body),
+    ["Noch offen: Offen","Noch offen: Offen, Erledigt, Teilweise","Noch offen: Offen, Erledigt, Teilweise und 1 weiteres","Noch offen: Offen, Erledigt, Teilweise und 2 weitere"]);
+  t("Geschickt wird nur an die Push-Dienste der Browser, nie an beliebige Adressen",()=>["https://fcm.googleapis.com/fcm/send/x","https://updates.push.services.mozilla.com/wpush/v2/x","https://web.push.apple.com/x","https://wns2-par02p.notify.windows.com/w/?token=x",
+    "https://evil.example.com/x","http://fcm.googleapis.com/x","https://fcm.googleapis.com.evil.com/x","kein link"].map(P.okEndpoint),[true,true,true,true,false,false,false,false]);
+
+  group("Push-Erinnerung auf dem Server: ein Durchlauf");
+  function lauf(o){ // nachgebaute Datenbank und nachgebauter Push-Dienst für einen Durchlauf
+    const d=Object.assign({prof:pr({id:"u1"}),subs:[{id:"s1",endpoint:"https://fcm.googleapis.com/fcm/send/a"},{id:"s2",endpoint:"https://web.push.apple.com/b"}],
+      habits:[hb("Wasser",{target:3}),hb("Lesen")],counts:{Wasser:1},status:{},sent:[]},o);
+    const db={profiles:async()=>d.prof.rem_on?[d.prof]:[],subs:async()=>d.subs,habits:async()=>d.habits,counts:async()=>d.counts,
+      claim:async(id,day)=>d.prof.rem_sent===day?false:(d.prof.rem_sent=day,true),release:async()=>{d.prof.rem_sent=null},dropSub:async id=>{d.subs=d.subs.filter(s=>s.id!==id)}};
+    d.run=async at=>{const r=await P.run({db,send:async(s,m)=>{d.sent.push(s.id+" "+m.body);return d.status[s.id]??201},now:Z(at)});return [r.due,r.sent,r.gone,r.failed]};
+    return d;
+  }
+  const AT="2026-11-11T19:00:00";
+  await ta("Uhrzeit erreicht, noch etwas offen: eine Nachricht an jedes angemeldete Gerät, der Tag ist danach erledigt",async()=>{
+    const d=lauf();return [await d.run(AT),d.sent,d.prof.rem_sent]},[[1,2,0,0],["s1 Noch offen: Wasser, Lesen","s2 Noch offen: Wasser, Lesen"],DAY]);
+  await ta("Kein Nachhaken: Spätere Durchläufe am selben Tag schicken nichts mehr, auch wenn noch etwas offen ist",async()=>{
+    const d=lauf();await d.run(AT);d.sent=[];return [await d.run("2026-11-11T19:05:00"),await d.run("2026-11-11T22:00:00"),d.sent]},[[0,0,0,0],[0,0,0,0],[]]);
+  await ta("Am nächsten Tag wieder genau eine",async()=>{
+    const d=lauf();await d.run(AT);return [await d.run("2026-11-12T19:00:00"),d.sent.length,d.prof.rem_sent]},[[1,2,0,0],4,"2026-11-12"]);
+  await ta("Alles erledigt: Es kommt nichts, und der Tag gilt als erledigt (auch wenn man später einen Haken zurücknimmt)",async()=>{
+    const d=lauf({counts:{Wasser:3,Lesen:1}}),a=await d.run(AT);d.counts={};return [a,await d.run("2026-11-11T20:00:00"),d.sent,d.prof.rem_sent]},[[1,0,0,0],[0,0,0,0],[],DAY]);
+  await ta("Nur pausierte Habits offen: Es kommt nichts",async()=>{
+    const d=lauf({habits:[hb("Wasser",{paused:[{from:"2026-11-01",to:null}]})],counts:{}});return [await d.run(AT),d.sent]},[[1,0,0,0],[]]);
+  await ta("Vor der Uhrzeit, Erinnerung aus oder kein Gerät angemeldet: Nichts passiert, nichts wird gemerkt",async()=>{
+    const a=lauf(),b=lauf({prof:pr({id:"u1",rem_on:false})}),c=lauf({subs:[]}),e=lauf({subs:[{id:"x",endpoint:"https://evil.example.com/p"}]});
+    return [await a.run("2026-11-11T18:55:00"),await b.run(AT),await c.run(AT),await e.run(AT),[a,b,c,e].map(d=>d.prof.rem_sent),[a,b,c,e].flatMap(d=>d.sent)]},[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[null,null,null,null],[]]);
+  await ta("Ein Gerät hat sich abgemeldet (Push-Dienst sagt 410): Seine Anmeldung wird gelöscht, das andere bekommt die Nachricht",async()=>{
+    const d=lauf({status:{s1:410}});return [await d.run(AT),d.subs.map(s=>s.id),d.prof.rem_sent]},[[1,1,1,0],["s2"],DAY]);
+  await ta("Push-Dienst gerade nicht erreichbar: Der Tag bleibt offen, der nächste Durchlauf versucht es nochmal",async()=>{
+    const d=lauf({status:{s1:503,s2:0}}),a=await d.run(AT),offen=d.prof.rem_sent;d.status={};
+    return [a,offen,await d.run("2026-11-11T19:05:00"),d.prof.rem_sent]},[[1,0,0,2],null,[1,2,0,0],DAY]);
+  await ta("Push-Dienst lehnt dauerhaft ab (403): kein endloses Wiederholen",async()=>{
+    const d=lauf({status:{s1:403,s2:403}});return [await d.run(AT),d.prof.rem_sent,await d.run("2026-11-11T19:05:00")]},[[1,0,0,2],DAY,[0,0,0,0]]);
+
+  group("Web Push: Verschlüsselung und Ausweis des Servers (Standards RFC 8291 und RFC 8292)");
+  // Beispiel aus dem Standard RFC 8291 (Abschnitt 5 und Anhang A): feste Schlüssel, festes Salz, bekanntes Ergebnis
+  const RFC={text:"When I grow up, I want to be a watermelon",
+    asPub:"BP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A8",asPriv:"yfWPiYE-n46HLnH0KqZOF1fJJU3MYrct3AELtAQ-oRw",
+    uaPub:"BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",uaPriv:"q1dXpw3UpT5VOmu_cf_v6ih07Aems3njxI-JWgLcM94",
+    salt:"DGv6ra1nlYgDCS1FRnbzlw",auth:"BTBZMqHH6r4Tts7J_aSIgg",cek:"oIhVW04MRdy2XN9CiKLxTg",nonce:"4h_95klXJ5E_qnoN"};
+  const EC={name:"ECDH",namedCurve:"P-256"},dec=b=>new TextDecoder().decode(b);
+  const jwk=(pub,priv)=>{const p=WP.bytes(pub);return {kty:"EC",crv:"P-256",x:WP.b64(p.slice(1,33)),y:WP.b64(p.slice(33)),d:priv}};
+  await ta("Beispiel aus dem Standard: Mit dessen festen Werten entstehen genau dessen Kopf, Schlüssel und Nonce",async()=>{
+    const once={publicKey:await crypto.subtle.importKey("raw",WP.bytes(RFC.asPub),EC,true,[]),privateKey:await crypto.subtle.importKey("jwk",jwk(RFC.asPub,RFC.asPriv),EC,false,["deriveBits"])};
+    const body=await WP.encrypt({p256dh:RFC.uaPub,auth:RFC.auth},RFC.text,{salt:WP.bytes(RFC.salt),once});
+    // Entschlüsselt wird mit Schlüssel und Nonce, wie sie IM STANDARD stehen. Das klappt nur, wenn unsere Rechnung dieselben ergibt.
+    const key=await crypto.subtle.importKey("raw",WP.bytes(RFC.cek),"AES-GCM",false,["decrypt"]);
+    const plain=new Uint8Array(await crypto.subtle.decrypt({name:"AES-GCM",iv:WP.bytes(RFC.nonce)},key,body.slice(86)));
+    return [WP.b64(body).slice(0,32),dec(plain.slice(0,-1)),plain[plain.length-1]]},["DGv6ra1nlYgDCS1FRnbzlwAAEABBBP4z",RFC.text,2]);
+  // So entschlüsselt ein Gerät (Seite des Empfängers im Standard), unabhängig von webpush.js geschrieben
+  async function open(body,priv,pubRaw,auth){
+    const hk=async(salt,ikm,info,len)=>new Uint8Array(await crypto.subtle.deriveBits({name:"HKDF",hash:"SHA-256",salt,info},await crypto.subtle.importKey("raw",ikm,"HKDF",false,["deriveBits"]),len*8));
+    const te=s=>new TextEncoder().encode(s),join=(...a)=>new Uint8Array(a.flatMap(x=>[...x]));
+    const salt=body.slice(0,16),n=body[20],as=body.slice(21,21+n);
+    const secret=new Uint8Array(await crypto.subtle.deriveBits({name:"ECDH",public:await crypto.subtle.importKey("raw",as,EC,false,[])},priv,256));
+    const ikm=await hk(auth,secret,join(te("WebPush: info\0"),pubRaw,as),32);
+    const key=await crypto.subtle.importKey("raw",await hk(salt,ikm,te("Content-Encoding: aes128gcm\0"),16),"AES-GCM",false,["decrypt"]);
+    const plain=new Uint8Array(await crypto.subtle.decrypt({name:"AES-GCM",iv:await hk(salt,ikm,te("Content-Encoding: nonce\0"),12)},key,body.slice(21+n)));
+    return dec(plain.slice(0,-1));
+  }
+  await ta("Das Gerät aus dem Standard kann das Beispiel lesen (Gegenprobe mit dessen privatem Schlüssel)",async()=>{
+    const body=await WP.encrypt({p256dh:RFC.uaPub,auth:RFC.auth},RFC.text);
+    return open(body,await crypto.subtle.importKey("jwk",jwk(RFC.uaPub,RFC.uaPriv),EC,false,["deriveBits"]),WP.bytes(RFC.uaPub),WP.bytes(RFC.auth))},RFC.text);
+  await ta("Echte Nachricht mit Umlauten: Nur das Gerät mit seinem Schlüssel kann sie lesen, jede Nachricht sieht anders aus",async()=>{
+    const ua=await crypto.subtle.generateKey(EC,true,["deriveBits"]),pub=new Uint8Array(await crypto.subtle.exportKey("raw",ua.publicKey)),auth=crypto.getRandomValues(new Uint8Array(16));
+    const sub={p256dh:WP.b64(pub),auth:WP.b64(auth)},msg=JSON.stringify(P.text([hb("Französisch üben"),hb("Wasser")]));
+    const a=await WP.encrypt(sub,msg),b=await WP.encrypt(sub,msg),fremd=await crypto.subtle.generateKey(EC,true,["deriveBits"]);
+    return [await open(a,ua.privateKey,pub,auth),WP.b64(a)!==WP.b64(b),await open(a,fremd.privateKey,pub,auth).then(()=>"lesbar",()=>"nicht lesbar")]},
+    ['{"title":"MIND","body":"Noch offen: Französisch üben, Wasser"}',true,"nicht lesbar"]);
+  await ta("Ausweis des Servers: gültige Unterschrift, richtiger Empfänger, läuft nach 12 Stunden ab",async()=>{
+    const k=await WP.newKeys(),{request}=await WP.sender(k.pub,k.priv,"https://mind.example");
+    const r=await request({endpoint:"https://fcm.googleapis.com/fcm/send/abc",p256dh:RFC.uaPub,auth:RFC.auth},{title:"MIND",body:"x"});
+    const m=r.headers.Authorization.match(/^vapid t=([\w-]+)\.([\w-]+)\.([\w-]+), k=([\w-]+)$/);
+    const pub=await crypto.subtle.importKey("raw",WP.bytes(m[4]),{name:"ECDSA",namedCurve:"P-256"},false,["verify"]);
+    const valid=await crypto.subtle.verify({name:"ECDSA",hash:"SHA-256"},pub,WP.bytes(m[3]),new TextEncoder().encode(m[1]+"."+m[2]));
+    const c=JSON.parse(dec(WP.bytes(m[2])));
+    return [valid,JSON.parse(dec(WP.bytes(m[1]))),c.aud,c.sub,Math.round((c.exp-Date.now()/1000)/3600),m[4]===k.pub,WP.bytes(k.pub).length,r.method,r.headers["Content-Encoding"],r.headers.TTL,r.body.length>86]},
+    [true,{typ:"JWT",alg:"ES256"},"https://fcm.googleapis.com","https://mind.example",12,true,65,"POST","aes128gcm","10800",true]);
+
+  group("Installierbare App: Service Worker und Manifest");
+  const get=f=>fetch("../public/"+f,{cache:"no-store"});
+  const swText=await (await get("sw.js")).text(),FILES=JSON.parse(swText.match(/const FILES=(\[[\s\S]*?\]);/)[1]),VERSION=swText.match(/const VERSION="([^"]*)"/)[1];
+  async function ls(dir){ // alle Dateien eines Ordners in public/ (der Testserver zeigt Ordner ohne index.html als Liste)
+    const out=[];
+    for(const m of (await (await get(dir)).text()).matchAll(/<a href="([^"]+)"/g)){
+      const n=decodeURIComponent(m[1]);if(/^[.?\/]/.test(n))continue;
+      if(n.endsWith("/"))out.push(...await ls(dir+n));else out.push(dir+n);
+    }
+    return out;
+  }
+  const SKIP=["sw.js","fonts/ofl.txt","js/vendor/LIES-MICH.txt"]; // gehören nicht zu dem, was die App zum Laufen braucht
+  await ta("Die Liste im Service Worker ist genau der Inhalt von public/ (sonst fehlt ohne Netz eine Datei)",async()=>{
+    // Ganz oben in public/ liegen nur index.html ("./"), manifest.webmanifest und sw.js. Die Ordner werden nachgesehen.
+    const have=["./","manifest.webmanifest"].concat(...await Promise.all(["css/","fonts/","icons/","js/"].map(ls))).filter(f=>!SKIP.includes(f));
+    return {"fehlt in sw.js":have.filter(f=>!FILES.includes(f)),"gibt es nicht":FILES.filter(f=>!have.includes(f))}},{"fehlt in sw.js":[],"gibt es nicht":[]});
+  await ta("VERSION im Service Worker passt zum Inhalt (sonst merkt kein Gerät, dass es etwas Neues gibt)",async()=>{
+    const parts=await Promise.all(FILES.map(async f=>new Uint8Array(await (await get(f==="./"?"index.html":f)).arrayBuffer())));
+    const all=new Uint8Array(parts.reduce((n,p)=>n+p.length,0));let i=0;for(const p of parts){all.set(p,i);i+=p.length}
+    const sum=[...new Uint8Array(await crypto.subtle.digest("SHA-256",all))].map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,12);
+    return sum===VERSION?"stimmt":`In public/sw.js eintragen: const VERSION="${sum}";`},"stimmt");
+  await ta("Manifest: Name, Start, eigenes Fenster, Symbole in allen Größen sind da",async()=>{
+    const m=await (await get("manifest.webmanifest")).json(),da=await Promise.all(m.icons.map(async i=>(await get(i.src)).ok));
+    return [m.short_name,m.start_url,m.display,m.icons.map(i=>i.sizes+(i.purpose?" "+i.purpose:"")),da.every(Boolean)]},["MIND","./","standalone",["192x192","512x512","512x512 maskable","any"],true]);
+  await ta("Seite: Manifest und iPhone-Symbol sind verlinkt, nichts lädt mehr von fremden Servern",async()=>{
+    const html=await (await get("index.html")).text();
+    return [/rel="manifest"/.test(html),/rel="apple-touch-icon"/.test(html),/apple-mobile-web-app-capable/.test(html),/(src|href)="https?:/.test(html)]},[true,true,true,false]);
+  localStorage.removeItem("mind-seen");localStorage.removeItem("mind-theme");
 
   document.getElementById("sum").textContent=fail?`${fail} von ${pass+fail} Tests fehlgeschlagen`:`Alle ${pass} Tests bestanden`;
   document.getElementById("sum").className=fail?"no":"ok";
