@@ -3,7 +3,10 @@
 // Sie kennt dieselben Tabellen und Funktionen wie die echte: habits, profiles, checkins,
 // checkin_add / checkin_set / checkins_map (siehe docs/2026-11-10_checkins.sql) und Realtime.
 // Seit Puls 2 und 3 auch die Spalten unit, unit_pl, paused (habits) und theme, days_total (profiles).
-// Steuerung für Tests: window.MOCK (Daten und Helfer), MOCK_FAIL (kein Netz), MOCK_LOGGED_OUT (abgemeldet), MOCK_LOG (alle Anfragen).
+// Seit der installierbaren App: Tipp-IDs (p_op, jeder Auftrag zählt nur einmal), Tabelle push_subs und push_key().
+// Steuerung für Tests: window.MOCK (Daten und Helfer), MOCK_FAIL (kein Netz), MOCK_LOSE (die Anfrage kommt an, aber
+// die Antwort geht verloren), MOCK_FAIL_TAPS (nur das Abhaken kommt nicht durch), MOCK_LOGGED_OUT (abgemeldet),
+// MOCK_DATA (Daten aus einem früheren Start übernehmen), MOCK_LOG (alle Anfragen).
 (function(){
 const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const T0=new Date();T0.setHours(0,0,0,0);
@@ -35,16 +38,18 @@ H.forEach(([name,days,cat,target,daytime,rate,todayN,color,icon,unit="",unit_pl=
 const listeners=[]; // Realtime: wer bei Änderungen an checkins Bescheid bekommt
 const row=(id,day)=>store.checkins.find(c=>c.habit_id===id&&c.day===day);
 function setCount(id,day,n){let c=row(id,day);if(!c){c={habit_id:id,user_id:"u1",day,count:0};store.checkins.push(c)}c.count=n;listeners.forEach(cb=>cb({eventType:"UPDATE",new:{...c}}));return n}
-const store=window.MOCK={habits,checkins,profiles:[{id:"u1",name:"Paul",timezone:"Europe/Berlin",plan:"free",rem_on:false,rem_time:"20:00",theme:"",days_total:0,created_at:new Date().toISOString()}],
+const store=window.MOCK={push_subs:[],ops:new Set(),key:"BMockSchluessel",profiles:[{id:"u1",name:"Paul",timezone:"Europe/Berlin",plan:"free",rem_on:false,rem_time:"20:00",theme:"",days_total:0,created_at:new Date().toISOString()}],
   count:(id,day)=>(row(id,day)||{count:0}).count,  // so viele Haken stehen in der "Datenbank"
   other:(id,day,n)=>setCount(id,day,n)};            // ein anderes Gerät setzt die Anzahl
+// MOCK_DATA = {habits, checkins, profiles} aus einem früheren Start übernehmen (die Datenbank "überlebt" ein Neuladen der App)
+Object.assign(store,{habits,checkins},window.MOCK_DATA||{});
 window.MOCK_LOG=[];
 const COLS=new Set(["id","user_id","name","days","cat","created","pos","target","daytime","color","icon","settings_log","unit","unit_pl","paused","created_at"]);
 const PROF=new Set(["name","timezone","rem_on","rem_time","theme","days_total"]); // nur diese Spalten darf die App im Profil ändern
 const OKICO=['','tropfen','blatt','buch','hantel','puls','sonne','mond','stift','herz','apfel','pille','note','sprache','hut','haus','handy'];
 const OKCOL=["","himmel","salbei","lavendel","apricot","sonne","rose","petrol","koralle"];
 const cp=o=>JSON.parse(JSON.stringify(o));
-const NONET={data:null,error:{message:"TypeError: Failed to fetch"}},RLS={data:null,error:{message:'new row violates row-level security policy for table "checkins"'}};
+const NONET={data:null,error:{message:"TypeError: Failed to fetch"},status:0},RLS={data:null,error:{message:'new row violates row-level security policy for table "checkins"'}};
 const later=fn=>({then(res,rej){return new Promise(r=>setTimeout(r,60)).then(fn).then(res,rej)}}); // wie das Netz: Antwort nach 60 ms
 function check(t,o){
   if(t==="checkins")return store.habits.some(h=>h.id===o.habit_id)&&o.count>=0&&o.count<=20?null:RLS.error;
@@ -54,6 +59,7 @@ function check(t,o){
     if(o.days_total!==undefined&&!(o.days_total>=0))return{message:'new row violates check constraint "profiles_days_total_valid"'};
     return null;
   }
+  if(t==="push_subs")return /^https:\/\//.test(o.endpoint||"")&&o.p256dh&&o.auth?null:{message:'new row violates check constraint "push_subs_endpoint_check"'};
   if(t!=="habits")return null;
   for(const k in o)if(!COLS.has(k)||(k==="color"&&window.MOCK_NO_COLOR))return{message:`Could not find the '${k}' column of 'habits' in the schema cache`};
   if(o.color!==undefined&&!OKCOL.includes(o.color))return{message:'new row violates check constraint "habits_color_valid"'};
@@ -63,7 +69,7 @@ function check(t,o){
   if((o.unit||"").length>20||(o.unit_pl||"").length>20)return{message:'new row violates check constraint "habits_unit_len"'};
   return null;
 }
-const DEF={habits:()=>({id:"n-"+Math.random().toString(36).slice(2,10),user_id:"u1",cat:"",days:ALL,pos:0,target:1,daytime:"",color:"",icon:"",settings_log:[],unit:"",unit_pl:"",paused:[],created_at:new Date().toISOString()}),checkins:()=>({user_id:"u1",count:0})};
+const DEF={push_subs:()=>({id:"p-"+Math.random().toString(36).slice(2,10),user_id:"u1",created_at:new Date().toISOString()}),habits:()=>({id:"n-"+Math.random().toString(36).slice(2,10),user_id:"u1",cat:"",days:ALL,pos:0,target:1,daytime:"",color:"",icon:"",settings_log:[],unit:"",unit_pl:"",paused:[],created_at:new Date().toISOString()}),checkins:()=>({user_id:"u1",count:0})};
 function exec(q){
   if(window.MOCK_FAIL)return NONET;
   const rows=store[q.t],m=r=>q.f.every(f=>f(r));
@@ -72,12 +78,14 @@ function exec(q){
   if(q.op==="update"){const e=check(q.t,q.p);if(e)return{data:null,error:e};rows.filter(m).forEach(r=>Object.assign(r,cp(q.p)));return{data:null,error:null}}
   if(q.op==="insert"){const a=Array.isArray(q.p)?q.p:[q.p];for(const o of a){const e=check(q.t,o);if(e)return{data:null,error:e}}
     const ins=a.map(o=>Object.assign(DEF[q.t](),cp(o)));rows.push(...ins);const d=cp(ins);return{data:q.ret?(q.single?d[0]:d):null,error:null}}
+  if(q.op==="upsert"){const e=check(q.t,q.p);if(e)return{data:null,error:e};const old=rows.find(r=>r[q.on]===q.p[q.on]);
+    if(old)Object.assign(old,cp(q.p));else rows.push(Object.assign(DEF[q.t](),cp(q.p)));return{data:null,error:null}}
   if(q.op==="delete"){store[q.t]=rows.filter(r=>!m(r));if(q.t==="habits")store.checkins=store.checkins.filter(c=>store.habits.some(h=>h.id===c.habit_id));return{data:null,error:null}} // Haken gehen mit dem Habit
 }
 function from(t){
   const q={t,op:"select",f:[],o:[],p:null,single:false,ret:false};
   const b={select(){if(q.op!=="select")q.ret=true;return b},order(c){q.o.push(c);return b},eq(c,v){q.f.push(r=>r[c]===v);return b},not(c){q.f.push(r=>r[c]!=null);return b},
-    update(o){q.op="update";q.p=o;return b},insert(o){q.op="insert";q.p=o;return b},delete(){q.op="delete";return b},single(){q.single=true;return b},
+    update(o){q.op="update";q.p=o;return b},upsert(o,opt){q.op="upsert";q.p=o;q.on=opt.onConflict;return b},insert(o){q.op="insert";q.p=o;return b},delete(){q.op="delete";return b},single(){q.single=true;return b},
     then(res,rej){return later(()=>exec(q)).then(res,rej)}};
   return b;
 }
@@ -85,12 +93,18 @@ function from(t){
 function rpc(name,a={}){return later(()=>{
   if(window.MOCK_FAIL)return NONET;
   window.MOCK_LOG.push({rpc:name,p:cp(a)});
+  if(name==="push_key")return{data:store.key,error:null};
+  if(window.MOCK_FAIL_TAPS&&name!=="checkins_map")return NONET; // nur das Abhaken kommt nicht durch
   if(name==="checkins_map"){const m={};store.checkins.forEach(c=>{if(c.count>0)(m[c.habit_id]=m[c.habit_id]||{})[c.day]=c.count});return{data:m,error:null}}
   if(name!=="checkin_add"&&name!=="checkin_set")return{data:null,error:{message:"Could not find the function public."+name+" in the schema cache"}};
   if(!store.habits.some(h=>h.id===a.p_habit))return RLS;
   const cur=store.count(a.p_habit,a.p_day),max=Math.min(20,Math.max(1,a.p_max??20));
+  const lost=window.MOCK_LOSE?NONET:null; // die Anfrage wird ausgeführt, aber die App erfährt es nicht
+  if(a.p_op&&store.ops.has(a.p_op))return lost||{data:cur,error:null}; // derselbe Auftrag nochmal: zählt nicht doppelt
+  if(a.p_op)store.ops.add(a.p_op);
   const n=name==="checkin_set"?Math.max(0,Math.min(a.p_count,20)):Math.max(0,Math.min(cur+(a.p_delta??1),Math.max(cur,max)));
-  return{data:setCount(a.p_habit,a.p_day,n),error:null};
+  setCount(a.p_habit,a.p_day,n);
+  return lost||{data:n,error:null};
 })}
 function channel(){const ch={on(_type,_filter,cb){ch.cb=cb;return ch},subscribe(){listeners.push(ch.cb);return ch}};return ch}
 function removeChannel(ch){const i=listeners.indexOf(ch.cb);if(i>=0)listeners.splice(i,1)}

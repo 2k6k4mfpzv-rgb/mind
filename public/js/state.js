@@ -9,7 +9,7 @@ export const TI=iso(today);
 export const state={
   habits:[],                               // Habits mit Haken: h.done = {"JJJJ-MM-TT": Anzahl}
   prof:null,                               // Zeile aus der Tabelle profiles
-  rem:{on:false,time:"20:00",last:""}      // Erinnerung (an/aus und Uhrzeit aus dem Profil, last nur auf diesem Gerät)
+  rem:{on:false,time:"20:00"}              // Erinnerung (an/aus und Uhrzeit aus dem Profil)
 };
 
 export const ui={

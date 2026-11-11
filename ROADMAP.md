@@ -1,6 +1,6 @@
 # MIND – Roadmap
 
-Stand: 10.11.2026. Reihenfolge: erst Funktionen, Oberfläche und Struktur (Phase A), dann für andere öffnen (Phase B).
+Stand: 11.11.2026. Reihenfolge: erst Funktionen, Oberfläche und Struktur (Phase A), dann für andere öffnen (Phase B).
 
 ## Grundregeln
 1. **Alles Zusätzliche ist optional.** Ein Habit besteht im Minimum nur aus einem Namen. Zeiten, Mehrfach-Ziele, Kategorie und Erinnerung sind ausgeklappte Zusatzoptionen und standardmäßig aus. Neue Datenbank-Felder bekommen immer einen Standardwert, der dem heutigen Verhalten entspricht.
@@ -22,7 +22,10 @@ Stand: 10.11.2026. Reihenfolge: erst Funktionen, Oberfläche und Struktur (Phase
   - [x] Mehrfach-Habit mit Tagesziel (z. B. Wasser 6× am Tag), Standard 1× = wie bisher
   - [x] Tageszeit (Morgen, Mittag, Abend oder Uhrzeit), Standard keine
 - [x] **A3 Profil und Einstellungen:** Tabelle `profiles` (Name, Zeitzone, `plan`), Seite „Einstellungen", Erinnerung wandert von localStorage in die Datenbank
-- [ ] **A4 Bessere Benachrichtigungen:** Prüfen, was geht (installierbare Web-App, Push, E-Mail). Entscheidung vorher.
+- [ ] **A4 Bessere Benachrichtigungen:** Entschieden am 07.11.2026: MIND wird eine installierbare Web-App (PWA) mit Push, keine App aus dem App Store und keine E-Mails. **Live seit 11.11.2026 (Pull Request #7), von Paul getestet. Offen ist nur noch sein Test der Push-Erinnerung auf dem iPhone.**
+  - [x] Installierbar: eigenes Symbol, eigenes Fenster, „Zum Home-Bildschirm“ auf dem iPhone
+  - [x] Offline: Die App startet ohne Netz und zeigt den Stand von zuletzt. Haken werden gemerkt und nachgeschickt (doppelsicher über Tipp-IDs). Neue Version kommt mit einem ruhigen Hinweis zum Antippen
+  - [ ] Push-Erinnerung vom Server: eine Nachricht am Tag zur eingestellten Uhrzeit, nur wenn noch Habits offen sind (Pauls Entscheidung 10.11.2026). Kein Nachhaken, keine roten Punkte. Abhaken direkt aus der Benachrichtigung gibt es bewusst nicht (auf dem iPhone nicht möglich)
   - [x] Mitentscheiden (aus dem Review vom 07.11.2026): Haken auf mehreren Geräten gleichzeitig sauber speichern (der Server zählt hoch, statt dass die App die ganze Liste schickt). Nötig, sobald man aus einer Benachrichtigung heraus abhaken kann, sonst spätestens vor dem Launch. **Erledigt am 10.11.2026 im Paket „Fundament“ (Tabelle `checkins`, Pull Request #5).**
 - [ ] **A5 Integrierte KI:** Schlüssel nur auf dem Server (Supabase-Funktion), Limit pro Nutzer, Kosten im Blick
   - [x] Vorher (aus dem Review vom 07.11.2026): `public/index.html` in Dateien aufteilen (Aussehen, Logik, Oberfläche), weil A5 viel Code dazubringt. **Erledigt am 10.11.2026 im Paket „Fundament“ (`css/`, `js/` als Module, Pull Request #5).**
@@ -62,3 +65,4 @@ Technisch ist das Öffnen ein Schalter in Supabase: *Authentication → Sign In 
 - [ ] KI-Limit pro Nutzer gesetzt (kostenlose Modelle, siehe A5), damit offene Anmeldungen keine Kosten erzeugen
 - [ ] Feinschliff-Runde (aus dem Review vom 07.11.2026): Abstände, Animationen und Texte auf allen Seiten einmal zusammen durchgehen
 - [ ] Haken auf zwei Geräten gleichzeitig getestet (siehe A4)
+- [ ] Push mit einem zweiten Testkonto geprüft (jeder bekommt nur seine eigene Erinnerung) und Kosten der Server-Funktion angesehen (sie läuft alle 5 Minuten, sobald jemand die Erinnerung an hat)
