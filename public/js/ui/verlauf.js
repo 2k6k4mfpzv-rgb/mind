@@ -4,7 +4,7 @@ import {DAYS} from "../config.js";
 import {state,ui,today,TI} from "../state.js";
 import {iso,addDays,monday,sched,cnt,tg,total,streak,konst,range,weekdayPattern,pauseOn,hexOf} from "../logic.js";
 import * as data from "../data.js";
-import {$,esc,fmt,CHECK,dtLabel,icoOf,pauseLabel} from "./dom.js";
+import {$,esc,fmt,CHECK,dtLabel,icoOf,pauseLabel,SPARK,PRO} from "./dom.js";
 import {render,onRender} from "./render.js";
 import {offerUndo} from "./toast.js";
 import {editHtml,startEdit,bindEdit} from "./edit.js";
@@ -39,7 +39,7 @@ function weekHtml(h,hi,li,len,start,tot){
     }
     x+="</span>";
   }
-  return x+`</div><p class="meta">Insgesamt ${tot}× geschafft · Serie ${s} ${s===1?"Tag":"Tage"}${h.target>1?" · "+h.target+(h.unit?" "+esc(h.unit_pl||h.unit):"×")+" täglich":""}${h.daytime?" · "+esc(dtLabel(h.daytime)):""}${h.cat?" · "+esc(h.cat):""}${pz?" · "+pauseLabel(pz):""}</p><div class="acts"><button data-up="${hi}" aria-label="${esc(h.name)} nach oben"${li===0?" disabled":""}>↑</button><button data-down="${hi}" aria-label="${esc(h.name)} nach unten"${li===len-1?" disabled":""}>↓</button><button data-edit="${hi}">Bearbeiten</button><button data-pz="${hi}">${pz?"Fortsetzen":"Pausieren"}</button><button data-del="${hi}"${ui.pend===hi?' class="warn"':""}>${ui.pend===hi?"Wirklich löschen?":"Löschen"}</button></div></div>`;
+  return x+`</div><p class="meta">Insgesamt ${tot}× geschafft · Serie ${s} ${s===1?"Tag":"Tage"}${h.target>1?" · "+h.target+(h.unit?" "+esc(h.unit_pl||h.unit):"×")+" täglich":""}${h.daytime?" · "+esc(dtLabel(h.daytime)):""}${h.cat?" · "+esc(h.cat):""}${pz?" · "+pauseLabel(pz):""}</p><div class="acts"><button data-up="${hi}" aria-label="${esc(h.name)} nach oben"${li===0?" disabled":""}>↑</button><button data-down="${hi}" aria-label="${esc(h.name)} nach unten"${li===len-1?" disabled":""}>↓</button><button data-edit="${hi}">Bearbeiten</button><button data-pz="${hi}">${pz?"Fortsetzen":"Pausieren"}</button><button class="kia" data-ki="muster" data-i="${hi}">${SPARK}Muster erklären${PRO}</button><button data-del="${hi}"${ui.pend===hi?' class="warn"':""}>${ui.pend===hi?"Wirklich löschen?":"Löschen"}</button></div></div>`;
 }
 function card(h,hi,li,len,start){
   const tot=total(h),k=konst([h],today),o=ui.openId===h.id,hx=hexOf(h);

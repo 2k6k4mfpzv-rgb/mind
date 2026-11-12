@@ -13,6 +13,7 @@ import "./ui/sheet.js";
 import {hey} from "./ui/heute.js";
 import {loadProf,profUi} from "./ui/ich.js";
 import {openSammlung,resetTheme} from "./ui/sammlung.js";
+import "./ui/ki.js";
 
 // Die Supabase-Bibliothek lädt index.html als eigenes Script (window.supabase)
 data.connect(window.supabase.createClient(SUPA_URL,SUPA_KEY));
@@ -22,9 +23,9 @@ data.on("profile",profUi);
 const busy=()=>ui.ed||document.querySelector("dialog[open]"); // gerade wird bearbeitet oder ein Blatt ist offen
 data.on("change",from=>{if(from==="remote"&&busy())return;render()});
 
-// --- Tab-Leiste (Heute, Verlauf, Sammlung, Ich). Paket 3 setzt den MIND-Knopf in die Mitte, die Leiste verteilt die Knöpfe von selbst. ---
+// --- Tab-Leiste (Heute, Verlauf, MIND, Sammlung, Ich). Der MIND-Knopf in der Mitte ist kein Bereich: Er öffnet den KI-Chat als Blatt (ui/ki.js). ---
 const tab=v=>{document.querySelectorAll(".view").forEach(s=>s.hidden=s.id!=="v-"+v);document.querySelectorAll("#tabs button").forEach(b=>b.dataset.tab===v?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));window.scrollTo(0,0);if(v==="sammlung")openSammlung()};
-$("tabs").onclick=e=>{const b=e.target.closest("button");if(b)tab(b.dataset.tab)};
+$("tabs").onclick=e=>{const b=e.target.closest("button");if(b&&b.dataset.tab)tab(b.dataset.tab)};
 // Tageszeit "Uhrzeit" gewählt: das Uhrzeit-Feld daneben zeigen (im Blatt und beim Bearbeiten)
 document.addEventListener("change",e=>{const t=e.target.dataset&&e.target.dataset.tm;if(t)$(t).hidden=e.target.value!=="zeit"});
 
@@ -58,7 +59,7 @@ $("lf").onsubmit=async e=>{
   const r=await data.signIn($("em").value.trim(),$("pw").value);
   if(r.error)$("lerr").textContent="Login fehlgeschlagen: "+r.error.message;
 };
-$("out").onclick=async()=>{await pwa.pushOff();await data.signOut();state.rem.on=false;resetTheme();hey();tab("heute");$("app").hidden=true;$("login").hidden=false;$("pw").value=""};
+$("out").onclick=async()=>{await pwa.pushOff();await data.signOut();state.rem.on=false;ui.ki=null;resetTheme();hey();tab("heute");$("app").hidden=true;$("login").hidden=false;$("pw").value=""};
 
 // --- Start ---
 // Was dieses Gerät zuletzt wusste, sofort zeigen, auch ohne Netz. Danach meldet sich die Anmeldung und es wird frisch geladen.
@@ -72,5 +73,5 @@ data.onAuth((ev,s)=>{
   if(s)$("pmail").textContent=s.user&&s.user.email||"";
   // !started: Die Anmeldung wurde erst später erneuert (TOKEN_REFRESHED), z. B. weil beim Start kein Netz da war
   if(s&&(ev==="INITIAL_SESSION"||ev==="SIGNED_IN"||!started)){started=true;setTimeout(()=>{data.load();loadProf();data.watch()},0)}
-  if(!s){started=false;data.clear();state.rem.on=false;resetTheme();$("pw").value=""}
+  if(!s){started=false;data.clear();state.rem.on=false;ui.ki=null;resetTheme();$("pw").value=""}
 });

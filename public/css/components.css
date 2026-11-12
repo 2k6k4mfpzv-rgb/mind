@@ -256,3 +256,54 @@ button.th:active{transform:scale(.97)}
 #net{max-width:720px;margin:0 auto 14px;padding:10px 14px;border-radius:var(--r-field);background:var(--cell);color:var(--ink);font-weight:600}
 #net:empty{display:none}
 .upd{display:block;width:100%;max-width:720px;margin:0 auto 14px;padding:10px 14px;border-radius:var(--r-field);background:var(--cell);color:var(--ink);font-size:.82rem;font-weight:600;text-align:left;text-decoration:underline;text-underline-offset:3px}
+
+/* --- KI (Paket 3): Funke, Plakette PRO, dunkle Pro-Fläche, Chat-Blatt. Farben aus tokens.css (--pro, --spark). --- */
+/* Funke: das Zeichen für die KI, immer in Koralle */
+svg.sp,.tabs svg.sp,.mrows svg.sp{width:20px;height:20px;flex:none;fill:var(--spark);stroke:none}
+.tabs svg.sp{width:24px;height:24px}
+/* Plakette PRO: klein neben der Funktion. Kein Schloss, nichts ausgegraut. */
+.pro{flex:none;padding:2px 7px;border-radius:var(--r-pill);background:var(--pro);border:1px solid color-mix(in srgb,var(--spark) 45%,var(--pro));color:var(--spark);font-size:.6rem;font-weight:800;letter-spacing:.12em;line-height:1.5}
+.mrows .pro,.kil .pro{margin-left:auto}
+/* Pro-Fläche */
+.prox{background:var(--pro);color:var(--proInk);border:1px solid color-mix(in srgb,var(--spark) 28%,var(--pro));border-radius:var(--r-panel)}
+.kiw{display:flex;align-items:center;gap:var(--sp-3);width:100%;margin:0 0 14px;padding:14px 16px;text-align:left}
+.kiw>span:nth-of-type(1){flex:1;min-width:0}
+.kiw b{display:block;font-weight:700}
+.kiw small{display:block;color:var(--proMute);font-size:.8rem}
+.kil{display:flex;align-items:center;gap:var(--sp-2);min-height:44px;padding:0 2px;font-size:.88rem;font-weight:600;text-align:left}
+.acts .kia{display:inline-flex;align-items:center;gap:6px}
+.acts .kia svg.sp{width:16px;height:16px}
+/* Chat */
+.spk{width:34px;height:34px;border-radius:var(--r-ico);background:var(--pro);border:1px solid color-mix(in srgb,var(--spark) 28%,var(--pro));display:grid;place-items:center;flex:none}
+.mh .pro{margin-left:-2px}
+.kih{display:flex;gap:var(--sp-3);flex:none}
+.kim{display:flex;flex-direction:column;gap:var(--sp-2);max-height:min(50vh,440px);overflow:auto;overscroll-behavior:contain}
+.kie{margin:0;color:var(--mute);font-size:.92rem}
+.kb{max-width:88%;padding:10px 14px;border-radius:18px;font-size:.95rem;line-height:1.45;overflow-wrap:anywhere}
+.kb.u{align-self:flex-end;background:var(--cell);border-bottom-right-radius:6px}
+.kb.a{align-self:flex-start;background:var(--pro);color:var(--proInk);border:1px solid color-mix(in srgb,var(--spark) 22%,var(--pro));border-bottom-left-radius:6px}
+.kw{display:flex;gap:5px;padding:15px 16px}
+.kw i{width:7px;height:7px;border-radius:50%;background:var(--proMute);animation:kw 1.2s infinite}
+.kw i:nth-child(2){animation-delay:.15s}.kw i:nth-child(3){animation-delay:.3s}
+@keyframes kw{0%,70%,100%{opacity:.3}35%{opacity:1}}
+.kiv{display:grid;gap:2px;margin-top:10px;padding:12px 14px;border-radius:var(--r-field);background:rgba(255,255,255,.07)}
+.kiv small,.kiv span{color:var(--proMute);font-size:.8rem}
+.kiv b{font-size:1rem;font-weight:700}
+.kiv .set{margin-top:10px}
+.kiv .btn{background:var(--spark)}
+.kiv .btn.ghost{background:none;color:var(--proInk);border-color:rgba(255,255,255,.28)}
+.kiv em{margin-top:8px;font-style:normal;font-size:.85rem;font-weight:700;color:var(--spark)}
+.kic{display:flex;gap:var(--sp-2);flex-wrap:wrap;margin-top:14px}
+.kic button{min-height:40px;padding:0 16px;border-radius:var(--r-pill);background:var(--cell);font-size:.88rem;font-weight:600}
+.kin{margin-top:12px}
+#kiB>.set{margin-top:16px}
+.kif{display:flex;gap:var(--sp-2);margin-top:14px}
+.kif .btn{flex:none;width:46px;height:46px;padding:0;border-radius:50%;display:grid;place-items:center}
+.kif .btn:disabled{opacity:.4;cursor:default}
+.kif svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+/* Pro-Seite (erscheint erst, wenn Pro eingeführt ist) */
+.pp{padding:20px 22px}
+.pp b{font-size:1.25rem;font-weight:800;letter-spacing:-.02em}
+.pp p{margin:4px 0 0;color:var(--proMute)}
+.pp ul{margin:14px 0;padding-left:20px;display:grid;gap:6px}
+.pp .pq{font-size:.85rem}

@@ -22,5 +22,6 @@ export const ui={
   ed:null,                 // Habit, das gerade bearbeitet wird (Formularwerte). sheet = im Blatt auf "Heute" statt in der Verlauf-Karte
   menu:null,               // Blatt der Kachel (lange drücken): {i: Habit, view: "main" | "pause" | "edit"}
   pausOpen:false,          // Heute: Liste der pausierten Habits aufgeklappt
-  pend:-1                  // Verlauf: Habit, bei dem "Wirklich löschen?" steht
+  pend:-1,                 // Verlauf: Habit, bei dem "Wirklich löschen?" steht
+  ki:null                  // KI-Chat (ui/ki.js): das laufende Gespräch. Nur hier, es wird nirgends gespeichert
 };

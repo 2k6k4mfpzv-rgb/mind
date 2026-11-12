@@ -15,6 +15,11 @@ const svgI=k=>`<svg viewBox="0 0 24 24" aria-hidden="true">${ICO[k]}</svg>`;
 const ini=s=>([...s.trim()][0]||"?").toUpperCase();
 export const icoOf=h=>h.icon?svgI(h.icon):esc(ini(h.name)); // Symbol oder Anfangsbuchstabe
 
+// KI (Paket 3): der Funke in Koralle ist das Zeichen für die KI, die Plakette markiert, was später zu Pro gehört.
+// Solange es kein bezahltes Pro gibt, ist alles für alle frei (Roadmap A5), die Plakette sperrt nichts.
+export const SPARK='<svg class="sp" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3.5l1.7 5 5 1.7-5 1.7-1.7 5-1.7-5-5-1.7 5-1.7z"/><path d="M18 13.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/></svg>';
+export const PRO='<span class="pro">PRO</span>';
+
 // Auswahl-Bausteine für "Neues Habit" (p = "a") und "Bearbeiten" (p = "e")
 export const daysHtml=(sel,attr)=>DAYS.map((d,i)=>`<button type="button" class="${sel.includes(i)?"on":""}" data-${attr}="${i}" aria-pressed="${sel.includes(i)}">${d[0]}</button>`).join("");
 export const colsHtml=(cur,p)=>`<div class="cols" role="radiogroup" aria-label="Farbe">${COLS.map(([k,l,x])=>`<button type="button" role="radio" aria-checked="${k===cur}" aria-label="${l}" data-${p}col="${k}" style="--c:${x}">${k===cur?CHECK:""}</button>`).join("")}</div>`;

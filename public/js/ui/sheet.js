@@ -8,8 +8,19 @@ import {$,daysHtml,colsHtml,icosHtml,optsHtml} from "./dom.js";
 import {render,onRender} from "./render.js";
 
 const pickers=()=>{$("acol").innerHTML=colsHtml(ui.acol,"a");$("aico").innerHTML=icosHtml(ui.aico,"a",HEX[ui.acol])};
-// Vorgewählt: die am wenigsten benutzte Farbe und kein Symbol (Anfangsbuchstabe)
-export const openSheet=()=>{ui.acol=nextCol(state.habits);ui.aico="";pickers();$("sheet").showModal()};
+// Vorgewählt: die am wenigsten benutzte Farbe und kein Symbol (Anfangsbuchstabe).
+// pre = Vorschlag der KI zum Anpassen (ui/ki.js): {name, days, target, daytime, unit, unit_pl} füllt das Formular vor.
+export function openSheet(pre){
+  ui.acol=nextCol(state.habits);ui.aico="";pickers();
+  if(pre){
+    const z=pre.daytime.includes(":");
+    $("inp").value=pre.name;ui.sel=pre.days.slice();
+    $("aopts").innerHTML=optsHtml("a",pre.target,z?"zeit":pre.daytime,z?pre.daytime:"",pre.unit,pre.unit_pl);
+    $("form").querySelector(".more").open=pre.target>1||!!pre.daytime||!!pre.unit;
+    render();
+  }
+  $("sheet").showModal();
+}
 
 onRender(()=>{$("days").innerHTML=daysHtml(ui.sel,"d")});
 $("days").onclick=e=>{const b=e.target.closest("button");if(!b)return;const i=+b.dataset.d;ui.sel=ui.sel.includes(i)?ui.sel.filter(x=>x!==i):ui.sel.concat(i);render()};
