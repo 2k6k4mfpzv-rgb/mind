@@ -4,6 +4,8 @@
 // checkin_add / checkin_set / checkins_map (siehe docs/2026-11-10_checkins.sql) und Realtime.
 // Seit Puls 2 und 3 auch die Spalten unit, unit_pl, paused (habits) und theme, days_total (profiles).
 // Seit der installierbaren App: Tipp-IDs (p_op, jeder Auftrag zählt nur einmal), Tabelle push_subs und push_key().
+// Seit dem KI-Assistenten: functions.invoke("ki") mit festen Antworten je nach Thema (keine echte KI, kein Netz).
+// MOCK_KI = eigene Antwort der Server-Funktion (Objekt oder Funktion, die die Anfrage bekommt), z. B. {limit:true}.
 // Steuerung für Tests: window.MOCK (Daten und Helfer), MOCK_FAIL (kein Netz), MOCK_LOSE (die Anfrage kommt an, aber
 // die Antwort geht verloren), MOCK_FAIL_TAPS (nur das Abhaken kommt nicht durch), MOCK_LOGGED_OUT (abgemeldet),
 // MOCK_DATA (Daten aus einem früheren Start übernehmen), MOCK_LOG (alle Anfragen).
@@ -108,8 +110,25 @@ function rpc(name,a={}){return later(()=>{
 })}
 function channel(){const ch={on(_type,_filter,cb){ch.cb=cb;return ch},subscribe(){listeners.push(ch.cb);return ch}};return ch}
 function removeChannel(ch){const i=listeners.indexOf(ch.cb);if(i>=0)listeners.splice(i,1)}
+// Die Server-Funktion "ki": antwortet wie supabase/functions/ki mit {text, vorschlag} oder einem Grund.
+// Die Nummer des Habits, um das es geht, steht in der Zusammenfassung ("Im Mittelpunkt: Nr. 3").
+function kiAnswer(b){
+  const n=b.msgs.filter(m=>m.role==="user").length,nr=+((b.ctx||"").match(/Im Mittelpunkt: Nr\. (\d+)/)||[0,1])[1];
+  if(b.kind==="mini")return{text:"An einem schlechten Tag reichen zwei Minuten. Hauptsache, du bleibst dran.",vorschlag:{art:"aendern",nr,name:"2 Minuten "+(store.habits[nr-1]||{name:"dranbleiben"}).name,ziel:1}};
+  if(b.kind==="muster")return{text:"Unter der Woche läuft es gut, am Wochenende deutlich seltener. Was ist samstags und sonntags anders?",vorschlag:null};
+  if(b.kind==="woche")return n<2?{text:"Wasser lief richtig gut, an 6 von 7 Tagen. Beim Lesen hakt es eher. Was war an den Abenden los?",vorschlag:null}:{text:"Dann mach es abends kleiner. Zwei Seiten gehen auch müde.",vorschlag:{art:"aendern",nr:3,name:"2 Seiten lesen",ziel:1}};
+  if(b.kind==="formulieren"||b.kind==="neu"&&n>1)return{text:"Fang klein an: zehn Minuten, an festen Tagen.",vorschlag:{art:"neu",name:"10 Minuten spazieren",tage:[0,1,2,3,4],ziel:1,einheit:"10 Minuten",mehrzahl:"",zeit:"abend"}};
+  if(b.kind==="neu")return{text:"Gern. Worum geht es, und wann am Tag passt es dir am besten?",vorschlag:null};
+  return{text:"Das ist die Testversion ohne echte KI. Hier steht später die Antwort von MIND.",vorschlag:null};
+}
+const functions={invoke(name,o={}){return later(()=>{
+  if(window.MOCK_FAIL)return{data:null,error:{name:"FunctionsFetchError",message:"Failed to send a request to the Edge Function"}};
+  window.MOCK_LOG.push({fn:name,p:cp(o.body)});
+  const k=window.MOCK_KI;
+  return{data:k?(typeof k==="function"?k(o.body):k):kiAnswer(o.body),error:null};
+})}};
 const user={user:{email:"test@example.com"}};
 const auth={cb:null,onAuthStateChange(cb){this.cb=cb;setTimeout(()=>cb("INITIAL_SESSION",window.MOCK_LOGGED_OUT?null:user),0);return{data:{subscription:{unsubscribe(){}}}}},
   async signInWithPassword(){this.cb("SIGNED_IN",user);return{error:null}},async signOut(){return{error:null}}};
-window.supabase={createClient:()=>({from,rpc,channel,removeChannel,auth})};
+window.supabase={createClient:()=>({from,rpc,channel,removeChannel,auth,functions})};
 })();
