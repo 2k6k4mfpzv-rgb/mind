@@ -11,14 +11,18 @@ import {createClient} from "jsr:@supabase/supabase-js@2";
 import {run} from "./coach.js";
 
 // --- KI-Anbieter: die EINE Stelle, an der Anbieter und Modell stehen. ---
-// Wechseln heißt: diese drei Werte ändern und den neuen Schlüssel als Geheimnis eintragen. Mistral, Groq und
+// Wechseln heißt: diese Werte ändern und den neuen Schlüssel als Geheimnis eintragen. Mistral, Groq und
 // Cloudflare sprechen dieselbe Schnittstelle (Chat Completions).
-// Mistral: Firma in Frankreich, Server in der EU. Im Konto muss das Training mit API-Daten ausgeschaltet sein
-// (Admin → Privacy), siehe PROJEKTDOKU.md Abschnitt 4.
+// Cloudflare Workers AI (seit 12.11.2026): kostenlos bis 10.000 "Neurons" am Tag für die ganze App, die Eingaben
+// werden nicht zum Training genutzt. Das Modell ist das kleine von Mistral, es läuft bei Cloudflare.
+// Mistral direkt (api.mistral.ai, Modell "mistral-small-latest") gibt es nur noch mit bezahltem Guthaben. Das ist
+// der Weg für später, wenn es Pro gibt, siehe PROJEKTDOKU.md Abschnitt 4.
+// Zwei Geheimnisse: CLOUDFLARE_ACCOUNT_ID (die Konto-Nummer, gehört zur Adresse) und CLOUDFLARE_API_TOKEN.
+const ACCOUNT=(Deno.env.get("CLOUDFLARE_ACCOUNT_ID")||"").trim();
 const PROVIDER={
-  url:"https://api.mistral.ai/v1/chat/completions",
-  model:"mistral-small-latest",
-  secret:"MISTRAL_API_KEY"   // Name des Geheimnisses, nicht der Schlüssel selbst
+  url:"https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(ACCOUNT)+"/ai/v1/chat/completions",
+  model:"@cf/mistralai/mistral-small-3.1-24b-instruct",
+  secret:"CLOUDFLARE_API_TOKEN"   // Name des Geheimnisses, nicht der Schlüssel selbst
 };
 // Pro einführen (Roadmap B4): Geheimnis MIND_PRO auf "on" setzen. Dann gilt für alle ohne plan "premium" die
 // Regel aus ki_take: nur "Woche besprechen", ein Gespräch im Monat. Solange es fehlt, ist die KI für alle frei.
@@ -58,7 +62,7 @@ Deno.serve(async req=>{
     if(!user)return json({fehler:"anmeldung"},401);
     const body=await req.json().catch(()=>null);
     const prof=need(await db.from("profiles").select("plan").eq("id",user.id).maybeSingle());
-    const key=Deno.env.get(PROVIDER.secret)||"";
+    const key=ACCOUNT?(Deno.env.get(PROVIDER.secret)||"").trim():""; // fehlt eins von beiden, gilt die KI als nicht eingerichtet
     let why="";
     const res=await run({
       body,plan:prof?.plan||"free",proOn:PRO_ON,key:!!key,model:PROVIDER.model,

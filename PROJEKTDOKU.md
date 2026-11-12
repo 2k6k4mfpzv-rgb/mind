@@ -21,7 +21,7 @@ Browser  ->  Cloudflare (liefert die Dateien aus public/)
 Browser  ->  Supabase   (Login und Datenbank, direkt aus dem Browser)
 GitHub   ->  Cloudflare (bei jedem Commit auf main automatisch neu veröffentlicht)
 Supabase ->  Push-Dienst des Browsers (Apple, Google, Mozilla) -> Gerät   (Erinnerung, seit 11.11.2026)
-Browser  ->  Supabase (Server-Funktion ki)  ->  KI-Anbieter Mistral   (KI-Assistent, seit 12.11.2026)
+Browser  ->  Supabase (Server-Funktion ki)  ->  KI-Anbieter Cloudflare Workers AI   (KI-Assistent, seit 12.11.2026)
 ```
 | Dienst | Aufgabe | Warum |
 |---|---|---|
@@ -151,8 +151,8 @@ Tabelle `public.ki_log` (seit 12.11.2026, eine Zeile pro Anfrage an die KI, **oh
 - Die App schickt das Gespräch und eine Zusammenfassung der Habits an die Edge Function `ki` (`supabase/functions/ki`). Die prüft die Anmeldung, zählt die Anfrage und fragt den KI-Anbieter. Zurück kommt `{text, vorschlag}` oder genau ein Grund (`setup`, `pro`, `limit`, `voll`, `fehler`).
 - **Limit:** `ki_take(p_user, p_kind, p_first, p_limit, p_pro)` zählt eine Anfrage, wenn das Tageslimit es erlaubt (20 am Tag, mit `plan = premium` 100, die Zahlen stehen in `coach.js`). `ki_back(p_id)` nimmt die Zählung zurück, wenn der Anbieter nicht geantwortet hat. Beide darf nur der Server aufrufen. Die App kommt an `ki_log` gar nicht heran (Row Level Security an, bewusst keine Regel). Der Sicherheitscheck von Supabase meldet das als Hinweis, das ist gewollt. Zeilen, die älter als 100 Tage sind, löscht die Datenbank nachts selbst.
 - **Pro (vorbereitet, aus):** `ki_take` kennt die Regel für später schon: Ohne Pro geht nur „Woche besprechen“, ein Gespräch im Monat, sonst zeigt die App die Pro-Seite. Eingeschaltet wird sie über das Geheimnis `MIND_PRO` = `on` der Edge Function. Wer `plan = premium` hat, ist davon nie betroffen.
-- **Anbieter:** Mistral (Frankreich, Server in der EU), Modell `mistral-small-latest`. Beides steht an einer Stelle, `PROVIDER` in `supabase/functions/ki/index.ts`. Im Mistral-Konto muss das Training mit API-Daten ausgeschaltet sein (Admin → Privacy → „Anonymous improvement data“), sonst darf Mistral die Anfragen des Gratis-Plans zum Training nutzen.
-- **Geheimnis:** `MISTRAL_API_KEY` ist ein Secret der Edge Function (Supabase-Dashboard → Edge Functions → Secrets). Es steht nirgends im Code oder im Repository.
+- **Anbieter:** Cloudflare Workers AI, Modell `@cf/mistralai/mistral-small-3.1-24b-instruct` (das kleine Modell von Mistral, es läuft bei Cloudflare). Beides steht an einer Stelle, `PROVIDER` in `supabase/functions/ki/index.ts`. Kostenlos bis 10.000 „Neurons“ am Tag **für die ganze App zusammen**, das sind grob 100 bis 130 Antworten. Ist das Kontingent leer, meldet der Chat einen Fehler, bis der Tag (UTC) um ist. Cloudflare nutzt die Eingaben nicht zum Training.
+- **Geheimnisse:** `CLOUDFLARE_ACCOUNT_ID` (Konto-Nummer) und `CLOUDFLARE_API_TOKEN` (Schlüssel mit dem Recht „Workers AI: Lesen“) sind Secrets der Edge Function (Supabase-Dashboard → Edge Functions → Secrets). Sie stehen nirgends im Code oder im Repository.
 - **Datenschutz:** An den Anbieter gehen die Anleitung, die Zusammenfassung (Habit-Namen, Tage, Tagesziel, Einheit, Tageszeit, Kategorie, Pause, Konstanz, Serie, letzte 7 Tage, Quote pro Wochentag) und das Gespräch. Keine E-Mail, kein Name, keine IDs. Gespräche werden bei MIND nicht gespeichert. Der Anbieter gehört in die Datenschutzerklärung (Roadmap B3), Habits können Gesundheitsdaten sein.
 - Nachsehen, wie viel die KI benutzt wird: Befehl unten in `docs/2026-11-12_ki.sql`. Was die Funktion getan hat (ohne Inhalte): Supabase → Edge Functions → `ki` → Logs.
 
@@ -260,7 +260,7 @@ Eine Datei benutzt nur Dateien, die links von ihr stehen. `logic.js` weiß nicht
 - **Push nur, wenn etwas offen ist, und nur einmal (Pauls Entscheidung 10.11.2026):** eine Nachricht zur eingestellten Uhrzeit, kein Nachhaken, keine roten Punkte. Ist alles erledigt, kommt nichts. Der Tag wird vor dem Senden als erledigt markiert, damit auch bei einem Fehler nie zwei Nachrichten kommen.
 - **Schlüssel im Tresor der Datenbank statt von Hand kopiert (11.11.2026):** Die Datenbank und die Server-Funktion erzeugen ihre Geheimnisse selbst und legen sie in Supabase Vault. Kein Schlüssel wandert durch einen Chat, eine Zwischenablage oder das Repository.
 - **Versionsnummer als Prüfsumme (11.11.2026):** Ohne Build-Schritt muss jemand dem Service Worker sagen, dass es etwas Neues gibt. Statt einer Nummer, die man vergisst, ist es die Prüfsumme der Dateien, und ein Test wacht darüber.
-- **KI: Mistral als Anbieter (Pauls Entscheidung 12.11.2026):** kostenlos, Firma und Server in der EU, das Training mit den Anfragen lässt sich abschalten. Verglichen mit Cloudflare Workers AI (kein Training, aber Server weltweit und knapperes Tageskontingent), Groq (Server in den USA) und Google Gemini (Gratis-Tarif für Apps mit Nutzern in der EU nicht erlaubt). Vergleich mit Quellen im Vault: `Habit Tracker/MIND – Fable Auftrag 3 (KI-Assistent).md`.
+- **KI: Cloudflare Workers AI als Anbieter (12.11.2026):** Zuerst war Mistral direkt gewählt (siehe nächster Satz). Beim Einrichten zeigte sich: Mistral gibt die API für neue Konten nur noch gegen vorab bezahltes Guthaben mit Kreditkarte frei (mindestens 10 €). Deshalb der zweite Platz aus dem Vergleich. Für später mit Pro bleibt Mistral direkt der bessere Weg (Server in der EU, kein Kontingent für alle zusammen), der Wechsel ist die eine Stelle `PROVIDER`. Die erste Entscheidung war Mistral: kostenlos, Firma und Server in der EU, das Training mit den Anfragen lässt sich abschalten. Verglichen mit Cloudflare Workers AI (kein Training, aber Server weltweit und knapperes Tageskontingent), Groq (Server in den USA) und Google Gemini (Gratis-Tarif für Apps mit Nutzern in der EU nicht erlaubt). Vergleich mit Quellen im Vault: `Habit Tracker/MIND – Fable Auftrag 3 (KI-Assistent).md`.
 - **KI bekommt eine Zusammenfassung, keine Daten (12.11.2026):** Die App rechnet aus, was die KI wissen muss, und schickt Text. So verlässt nichts die App, was die KI nicht braucht, und der Server braucht keine zweite Kopie der Rechen-Logik.
 - **Gespräche werden nicht gespeichert (12.11.2026):** weder auf dem Server noch auf dem Gerät. Weniger Daten, weniger Risiko, nichts zum Aufräumen. Der Preis: Nach dem Schließen von MIND ist das Gespräch weg.
 - **Limit und Pro-Regel auf dem Server (12.11.2026):** Das Repository ist öffentlich, die App kann jeder umbauen. Gezählt und entschieden wird deshalb in der Datenbank, die App zeigt nur an.
@@ -280,7 +280,8 @@ Eine Datei benutzt nur Dateien, die links von ihr stehen. `logic.js` weiß nicht
 - **Keine Push kommt an:** In „Ich“ nachsehen, ob dieses Gerät angemeldet ist. Dann in Supabase die Logs der Funktion `push-reminder` und die Befehle unten in `docs/2026-11-11_push.sql`. Kommt mehrere Tage nichts, kann Apple oder Google die Anmeldung des Geräts verworfen haben: in „Ich“ aus- und wieder einschalten.
 - Die App braucht `docs/2026-11-11_haken-ohne-netz.sql`. Ohne sie steht beim Abhaken oben „Could not find the function public.checkin_add(…p_op…)“. Für Push dazu `docs/2026-11-11_push.sql` und die ausgerollte Funktion, sonst steht in „Ich“ „Push ist auf dem Server noch nicht eingerichtet.“
 - Wer sich ohne Netz abmeldet, verliert Haken, die noch nicht nachgeschickt waren.
-- **Der Chat sagt „Die KI ist auf dem Server noch nicht eingerichtet.“:** Das Geheimnis `MISTRAL_API_KEY` fehlt bei der Edge Function `ki`.
+- **Der Chat sagt „Die KI ist auf dem Server noch nicht eingerichtet.“:** Eins der Geheimnisse `CLOUDFLARE_ACCOUNT_ID` oder `CLOUDFLARE_API_TOKEN` fehlt bei der Edge Function `ki`.
+- **Der Chat sagt „Das hat gerade nicht geklappt.“ bei jeder Frage:** In den Logs der Funktion `ki` steht der Grund, zum Beispiel `Anbieter 401` (Schlüssel falsch), `Anbieter 403` (Modell im Gratis-Plan nicht erlaubt) oder `Anbieter 429` (Tageskontingent leer).
 - **Der Chat sagt immer „Das hat gerade nicht geklappt.“:** Die Funktion `ki` ist nicht ausgerollt, `docs/2026-11-12_ki.sql` ist nicht ausgeführt, der Schlüssel ist falsch oder das Modell heißt beim Anbieter anders. Die Logs der Funktion zeigen den Grund (z. B. `Anbieter 401`).
 - **Antworten der KI ohne Vorschlagskarte, obwohl sie etwas vorschlägt:** Das Modell hat sich nicht an das Antwortformat gehalten. Die App zeigt dann nur den Text. Passiert das oft, die Anleitung in `coach.js` nachschärfen oder ein stärkeres Modell eintragen.
 - Wird eine Datei in `public/js/` oder `public/css/` umbenannt, müssen alle Stellen mit, die sie laden (`import` in den anderen Dateien, `<link>` in `index.html`). Sonst bleibt die Seite weiß. Die Tests zeigen das sofort.
@@ -294,7 +295,7 @@ Dinge ändern sich über Jahre. Prüfe:
 - Cloudflare: Läuft das Deployment grün? Eventuell hat sich die Einrichtung von Workers geändert (Konfigurationsdatei `wrangler.jsonc`).
 - Die Supabase-Bibliothek ist auf `2.45.4` festgelegt und liegt in `public/js/vendor/`. Sie funktioniert weiter, ist aber alt. Bei einem Update die Datei ersetzen, `LIES-MICH.txt` anpassen und die Anmelde- und Datenbankaufrufe testen.
 - Push: Läuft der Zeitplan noch (`select jobname, active from cron.job`)? Die Server-Funktion nutzt die Supabase-Bibliothek in der jeweils aktuellen 2er-Version.
-- KI: Gibt es das Modell `mistral-small-latest` noch, ist der Gratis-Plan noch gratis, und ist das Training im Mistral-Konto noch ausgeschaltet? Nutzung: Befehl unten in `docs/2026-11-12_ki.sql`.
+- KI: Gibt es das Modell bei Cloudflare noch, ist das Gratis-Kontingent noch gleich, und reicht es (Cloudflare-Dashboard → Workers AI)? Nutzung: Befehl unten in `docs/2026-11-12_ki.sql`.
 - Backup: In der App „Daten kopieren" oder in Supabase unter Table Editor → `habits` als CSV exportieren.
 - Zugänge: Konten bei GitHub, Cloudflare und Supabase sind alle an eine E-Mail-Adresse gebunden. Diese Adresse erreichbar halten.
 
@@ -304,7 +305,7 @@ Dinge ändern sich über Jahre. Prüfe:
 | GitHub | Repo `mind` unter dem eigenen Konto | github.com |
 | Cloudflare | Projekt `mind` unter Workers und Pages | dash.cloudflare.com |
 | Supabase | Projekt „MIND" | supabase.com/dashboard |
-| Mistral | Konto für den KI-Assistenten (API-Schlüssel, Training ausgeschaltet) | console.mistral.ai |
+| Cloudflare Workers AI | KI-Assistent (Schlüssel mit „Workers AI: Lesen“), gleiches Konto wie das Hosting | dash.cloudflare.com |
 
 Der `service_role`-Key darf **nie** in den Code oder ins Repository.
 
