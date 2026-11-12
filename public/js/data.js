@@ -262,6 +262,19 @@ export async function pushKey(){
 export const savePush=sub=>safe(db.from("push_subs").upsert({endpoint:sub.endpoint,p256dh:sub.keys.p256dh,auth:sub.keys.auth},{onConflict:"endpoint"})).then(r=>!r.error);
 export const dropPush=endpoint=>safe(db.from("push_subs").delete().eq("endpoint",endpoint)).then(r=>!r.error);
 
+// --- KI (Server-Funktion "ki", supabase/functions/ki) ---
+// Schickt das Gespräch und die Zusammenfassung der Habits (js/ki.js) an den Server. Der prüft die Anmeldung, zählt
+// die Anfrage (Limit pro Nutzer) und fragt den KI-Anbieter. Der Schlüssel des Anbieters liegt nur dort.
+// Antwort: {text, vorschlag} oder genau ein Grund: netz, setup, pro, limit, voll, fehler. Wirft nie.
+export async function ki(body){
+  if(off)return {netz:true};
+  let r;
+  try{r=await db.functions.invoke("ki",{body})}catch(e){r={error:e}}
+  const e=r&&r.error;
+  if(e)return e.name==="FunctionsFetchError"||NETRE.test(e.message||"")?{netz:true}:{fehler:true};
+  return r.data&&typeof r.data==="object"?r.data:{fehler:true};
+}
+
 // --- Login ---
 export const onAuth=fn=>db.auth.onAuthStateChange(fn);
 export const signIn=(email,password)=>db.auth.signInWithPassword({email,password});

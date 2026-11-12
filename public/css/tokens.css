@@ -29,6 +29,10 @@
   --ease:cubic-bezier(.2,.8,.2,1);
   --t-press:.15s;--t-switch:.2s;--t-sheet:.28s;--t-fade:.3s;--t-fill:.35s;--t-ring:.5s;--t-pop:.6s;
 
+  /* Pro und KI: dunkle Pro-Fläche und der Funke in Koralle. Diese vier Werte sind in jedem Theme und in hell und
+     dunkel gleich, daran erkennt man die KI-Stellen überall wieder. */
+  --pro:#1B1A21;--proInk:#F4F2F8;--proMute:#A8A4B3;--spark:#FF7A59;
+
   /* Ebenen */
   --z-tabs:5;--z-toast:6;
 }

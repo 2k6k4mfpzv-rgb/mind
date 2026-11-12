@@ -22,6 +22,7 @@
 <link rel="stylesheet" href="css/components.css">
 <link rel="modulepreload" href="js/config.js">
 <link rel="modulepreload" href="js/logic.js">
+<link rel="modulepreload" href="js/ki.js">
 <link rel="modulepreload" href="js/state.js">
 <link rel="modulepreload" href="js/store.js">
 <link rel="modulepreload" href="js/data.js">
@@ -36,6 +37,7 @@
 <link rel="modulepreload" href="js/ui/verlauf.js">
 <link rel="modulepreload" href="js/ui/sammlung.js">
 <link rel="modulepreload" href="js/ui/ich.js">
+<link rel="modulepreload" href="js/ui/ki.js">
 </head>
 <body>
 <div id="login" hidden>
@@ -69,6 +71,8 @@
 <!-- Verlauf: pro Habit eine Karte mit 12-Wochen-Mosaik, aufklappbar (nachtragen, bearbeiten). Darunter Fortschritt und Muster. -->
 <section class="view" id="v-verlauf" hidden>
   <h1>Verlauf</h1><p class="sub">Die Punkte zeigen die letzten 12 Wochen, der Ring deine Konstanz der letzten 30 Tage.</p>
+  <!-- KI-Einstieg (Paket 3): öffnet den Chat mit dem Thema "Woche besprechen". Dunkle Pro-Fläche, Funke in Koralle. -->
+  <button class="prox kiw" id="kiW" data-ki="woche" hidden><svg class="sp" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3.5l1.7 5 5 1.7-5 1.7-1.7 5-1.7-5-5-1.7 5-1.7z"/><path d="M18 13.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/></svg><span><b>Woche besprechen</b><small>Kurz mit MIND auf deine letzten 7 Tage schauen</small></span><span class="pro">PRO</span></button>
   <div class="chips" id="chips"></div>
   <div class="hcs" id="grid"></div>
   <button class="panel thc" id="thc" hidden></button>
@@ -132,6 +136,8 @@
 <nav class="tabs" id="tabs" aria-label="Bereiche">
   <button data-tab="heute" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>Heute</button>
   <button data-tab="verlauf"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-7M12 20V5M19 20v-10"/></svg>Verlauf</button>
+  <!-- MIND-Knopf: kein Bereich, sondern der KI-Chat als Blatt von unten (js/ui/ki.js) -->
+  <button data-ki="" aria-haspopup="dialog"><svg class="sp" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3.5l1.7 5 5 1.7-5 1.7-1.7 5-1.7-5-5-1.7 5-1.7z"/><path d="M18 13.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/></svg>MIND</button>
   <button data-tab="sammlung"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg>Sammlung</button>
   <button data-tab="ich"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20.2c1.3-3.7 4.1-5.2 7.2-5.2s5.9 1.5 7.2 5.2"/></svg>Ich</button>
 </nav>
@@ -143,6 +149,7 @@
   <div class="shh"><b id="shT">Neues Habit</b><button type="button" class="del" id="shx">Schließen</button></div>
   <form class="add" id="form">
     <input id="inp" placeholder="z. B. 10 Seiten lesen" maxlength="40" aria-label="Name">
+    <button type="button" class="kil" data-ki="formulieren"><svg class="sp" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3.5l1.7 5 5 1.7-5 1.7-1.7 5-1.7-5-5-1.7 5-1.7z"/><path d="M18 13.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/></svg>Hilf mir formulieren<span class="pro">PRO</span></button>
     <div class="days" id="days"></div>
     <div class="flab">Farbe<div id="acol"></div></div>
     <div class="flab">Symbol<div id="aico"></div></div>
@@ -155,6 +162,8 @@
 </dialog>
 <!-- Blatt der Kachel (lange drücken oder Rechtsklick): Farbe, Bearbeiten, Pausieren. Inhalt zeichnet js/ui/menu.js -->
 <dialog class="sheet" id="menu" aria-labelledby="mnT"><div class="shi" id="mnI"></div></dialog>
+<!-- KI-Chat (MIND-Knopf und die KI-Einstiege). Inhalt zeichnet js/ui/ki.js -->
+<dialog class="sheet" id="ki" aria-labelledby="kiT"><div class="shi" id="kiI"></div></dialog>
 </main>
 
 <!-- Supabase-Bibliothek, selbst gehostet (Version in js/vendor/LIES-MICH.txt), damit MIND ohne Netz startet.
