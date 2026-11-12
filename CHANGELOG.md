@@ -6,12 +6,34 @@ Private Habit-Tracker-Website. Frontend: `public/` (Gerüst `index.html`, dazu `
 | Teil | Ort |
 |---|---|
 | Webseite | `public/index.html`, `public/css/`, `public/js/`, `public/sw.js` (Service Worker), `public/manifest.webmanifest` |
-| Push-Erinnerung | `supabase/functions/push-reminder/` (Supabase Edge Function, von der Datenbank alle 5 Minuten angestoßen) |
+| Push-Erinnerung | `supabase/functions/push-reminder/` (Supabase Edge Function, von der Datenbank jede Minute angestoßen) |
+| KI-Assistent | `supabase/functions/ki/` (Supabase Edge Function, von der App aufgerufen, fragt den KI-Anbieter) |
 | Cloudflare-Konfiguration | `wrangler.jsonc` (Ordner `./public` wird veröffentlicht) |
 | Datenbank-Schema | `docs/schema.sql` und danach die Dateien `docs/JJJJ-MM-TT_*.sql` der Reihe nach |
 | Login | Supabase Auth, E-Mail und Passwort, Registrierung gesperrt |
 
 ## Änderungen (neueste zuerst)
+
+### 2026-11-12 – KI-Assistent: MIND-Knopf, Chat als Blatt, vier KI-Einstiege, Limit pro Nutzer, Pro vorbereitet
+- **Warum:** Paket 3 von vier (Vault: `Habit Tracker/MIND – Fable Auftrag 3 (KI-Assistent).md`), Roadmap A5. Pauls Entscheidungen vom 12.11.: Anbieter Mistral, Plakette „PRO“ schon jetzt zeigen, „Übernehmen“ bei der Mini-Version ändert das Habit.
+- **MIND-Knopf** in der Mitte der Tab-Leiste (Heute, Verlauf, MIND, Sammlung, Ich). Er ist kein Bereich, sondern öffnet den Chat als Blatt von unten. Man bleibt, wo man war. Oben zwei Vorschläge („Woche besprechen“, „Neues Habit planen“), unten das Eingabefeld. Neue Datei `public/js/ui/ki.js`.
+- **Vier Einstiege**, die den Chat gleich mit dem Thema öffnen: „Mini-Version vorschlagen“ im Blatt der Kachel, „Woche besprechen“ als Karte oben im Verlauf, „Muster erklären“ in der aufgeklappten Verlauf-Karte, „Hilf mir formulieren“ im Blatt „Neues Habit“ (die getippte Idee wandert in den Chat).
+- **Vorschläge als Karte** mit „Übernehmen“ und „Anpassen“. Übernehmen legt ein neues Habit an oder ändert ein bestehendes (derselbe Weg wie „Bearbeiten“, alte Haken zählen weiter nach den alten Einstellungen). Anpassen öffnet das bekannte Formular, schon ausgefüllt. Nichts ändert sich von selbst.
+- **Regeln:** Die KI schreibt nie zuerst (kein Push, kein Punkt, nach dem Öffnen geht keine Anfrage raus). Erst fragen, dann vorschlagen. Ohne KI ist alles benutzbar wie vorher. Das Gespräch wird nirgends gespeichert, weder auf dem Server noch auf dem Gerät. Es steht nur da, solange MIND offen ist.
+- **Was die KI erfährt:** nur eine Zusammenfassung, die die App ausrechnet (`public/js/ki.js`): Habit-Namen, Tage, Tagesziel, Einheit, Tageszeit, Kategorie, Pause, Konstanz der letzten 30 Tage, Serie, die letzten 7 Tage und die Quote pro Wochentag. Keine E-Mail, kein Name, keine IDs. Habits haben für die KI Nummern, die App weiß, welches Habit dahintersteckt.
+- **Server:** neue Edge Function `supabase/functions/ki` nach dem Muster von `push-reminder`: `coach.js` (Anfrage prüfen und kürzen, Anleitung für die KI, Antwort auswerten, Ablauf mit Limit, alles in `tests/logik.html` geprüft) und `index.ts` (Anmeldung prüfen, Datenbank, Anbieter). Ins Log kommt nur, dass eine Anfrage kam, nie ihr Inhalt.
+  - **Anleitung für die KI:** klein anfangen, Mini-Versionen für schlechte Tage, erst fragen, dann vorschlagen, kein Druck, keine erfundenen Zahlen, kein Arzt, kurz und in du-Form.
+  - **Anbieter an einer Stelle:** `PROVIDER` in `index.ts` (Adresse, Modell, Name des Geheimnisses). Jetzt Mistral mit `mistral-small-latest`. Wechseln sind drei Zeilen.
+  - **Limit pro Nutzer:** 20 Nachrichten am Tag (mit `plan = premium` 100), gezählt in der Datenbank. Antwortet der Anbieter nicht, wird die Zählung zurückgenommen.
+  - **Pro vorbereitet, nicht gesperrt:** Die Regel für später steht schon in der Datenbank-Funktion (ohne Pro nur „Woche besprechen“, ein Gespräch im Monat, sonst die Pro-Seite). Sie ist aus. Einschalten: Geheimnis `MIND_PRO` der Funktion auf `on` setzen.
+  - **Schlüssel:** nur als Geheimnis `MISTRAL_API_KEY` der Edge Function im Supabase-Dashboard. Nicht im Code, nicht im Repository. Fehlt er, sagt der Chat ruhig „Die KI ist auf dem Server noch nicht eingerichtet.“
+- **Pro-Stil:** dunkle Pro-Fläche und Funke in Koralle (vier neue Werte in `css/tokens.css`, in jedem Theme gleich), kleine Plakette „PRO“ an den KI-Stellen. Kein Schloss, nichts ausgegraut. Die faire Pro-Seite („Preis folgt · monatlich kündbar“, „Vielleicht später“) ist gebaut und erscheint erst, wenn Pro eingeführt ist.
+- **Ohne Netz:** Der Chat sagt „MIND braucht dafür Netz …“ statt eines Fehlers, es geht keine Anfrage raus, der getippte Text bleibt im Feld. Genauso ruhig: Tageslimit erreicht, viel los beim Anbieter, Fehler.
+- **Datenbank (noch NICHT ausgeführt):** `docs/2026-11-12_ki.sql` (Tabelle `ki_log` als Zähler ohne Inhalte, Funktionen `ki_take` und `ki_back` nur für den Server, nächtliches Aufräumen). Bestehende Daten werden nicht verändert, der alte Code auf `main` läuft damit weiter. Ohne die SQL und die ausgerollte Funktion antwortet der Chat mit „Das hat gerade nicht geklappt“, alles andere geht normal.
+- **Kleinigkeiten:** `openSheet()` und das Blatt der Kachel (`openEdit()`) können vorausgefüllt geöffnet werden. Der Tab-Wechsel reagiert nur noch auf Knöpfe, die ein Bereich sind. `logic.js` und `config.js` sind unverändert (die Push-Funktion muss nicht neu ausgerollt werden).
+- **Tests:** `tests/logik.html` hat 191 Tests (vorher 141). Neu: Zusammenfassung für die KI (keine IDs, Pausen, heute offen), Prüfen der Vorschläge, Server-Regeln (Anfrage kürzen, fremde Rollen, Anleitung, Antwort auswerten, Ablauf mit Limit, Pro-Regel, Zählung zurück bei Fehlern) und alle Bedienwege mit nachgebauter KI (MIND-Knopf, vier Einstiege, Übernehmen, Anpassen, ohne Netz, Limit, Pro-Seite, Text nie als HTML, Abmelden vergisst das Gespräch). `tests/mock-supabase.js` kennt `functions.invoke("ki")` mit festen Antworten.
+- **Teststand:** 191 von 191 Tests grün (in einem unsichtbaren Chrome in echter Zeit gelaufen). Mit Testdaten angesehen: Handy 375 px hell und dunkel, Mac 1280 px. **Nicht geprüft:** die SQL und die Server-Funktion in der echten Umgebung, eine echte Antwort von Mistral (dafür braucht es Pauls Schlüssel), Qualität und Ton der echten Antworten, der Chat auf dem iPhone mit eingeblendeter Tastatur.
+- **Nichts sonst geändert.**
 
 ### 2026-11-11 – Erinnerung kommt minutengenau
 - **Warum:** Paul: So kennt man es von anderen Apps, das 5-Minuten-Raster verwirrt (14:43 kam erst um 14:45 oder schon um 14:40).

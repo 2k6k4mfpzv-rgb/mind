@@ -1,6 +1,6 @@
 # Anweisungen für Claude (Projekt MIND)
 
-MIND ist mein privater Habit Tracker: `public/` (Gerüst `index.html`, `css/`, `js/` als Module ohne Build-Schritt, Service Worker `sw.js` für die installierbare App, Aufbau in `PROJEKTDOKU.md` Abschnitt 5), `supabase/functions/` (Server-Funktion für die Push-Erinnerung), Supabase (Login, Datenbank, Row Level Security, Registrierung gesperrt), Cloudflare Workers (veröffentlicht automatisch bei jedem Commit auf `main`). GitHub ist die Quelle der Wahrheit.
+MIND ist mein privater Habit Tracker: `public/` (Gerüst `index.html`, `css/`, `js/` als Module ohne Build-Schritt, Service Worker `sw.js` für die installierbare App, Aufbau in `PROJEKTDOKU.md` Abschnitt 5), `supabase/functions/` (Server-Funktionen: `push-reminder` für die Erinnerung, `ki` für den KI-Assistenten), Supabase (Login, Datenbank, Row Level Security, Registrierung gesperrt), Cloudflare Workers (veröffentlicht automatisch bei jedem Commit auf `main`). GitHub ist die Quelle der Wahrheit.
 
 Ich starte Sessions normalerweise im Obsidian-Vault `~/Documents/Gehirn` (meine Zentrale). Diese Regeln gelten trotzdem für jede Arbeit an diesem Code, egal aus welchem Ordner die Session gestartet wurde.
 
