@@ -342,6 +342,10 @@ async function run(){
   await ta("Antippen: Die Kachel schwappt kurz (.slosh) und beruhigt sich wieder",async()=>{
     const [i,h]=at(h=>h.unit==="Glas");await D.setCount(h,TJ,2);R.render();tile(i).click();const a=[tile(i).classList.contains("slosh"),tile(i).classList.contains("part"),L.cnt(h,TJ)];
     await sleep(1100);const r=[a,tile(i).classList.contains("slosh")];await D.setCount(h,TJ,5);R.render();return r},[[true,true,3],false]);
+  await ta("Zurück auf 0: Die Füllung sinkt glatt weg, unten bleibt kein Rest stehen (keine Welle, kein Kippen)",async()=>{
+    const [i,h]=at(h=>h.target===1&&sched(h,S.today)),war=L.cnt(h,TJ);await D.setCount(h,TJ,1);R.render();
+    tile(i).click();await sleep(300);const wv=tile(i).querySelector(".wv");
+    const r=[L.cnt(h,TJ),tile(i).classList.contains("slosh"),W.getComputedStyle(wv).opacity,W.getComputedStyle(tile(i).querySelector(".fill")).animationName];await quiet();await D.setCount(h,TJ,war);R.render();return r},[0,true,"0","none"]);
   await ta("Neues Habit mit Einheit anlegen",async()=>{
     type("inp","Liegestütze");$("atg").value=3;$("aun").value="Satz";$("aup").value="Sätze";
     $("form").dispatchEvent(new W.Event("submit",{bubbles:true,cancelable:true}));await quiet();

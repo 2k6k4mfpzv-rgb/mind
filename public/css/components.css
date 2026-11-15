@@ -39,9 +39,12 @@ button.hint{text-decoration:underline;text-underline-offset:3px}
    Beim Antippen (.slosh, setzt ui/heute.js für knapp eine Sekunde) kippt die Oberfläche kurz und die Welle wird höher. */
 .tile.part .fill{--wo:4px}
 .wv{position:absolute;left:0;bottom:calc(100% - 1px);width:200%;height:10px;fill:var(--c);opacity:0;transform-origin:50% 100%;transition:opacity var(--t-switch)}
-.tile.part .wv,.tile.slosh .wv{opacity:1}
+/* Welle und Schwapper gibt es nur, solange Füllung da ist: halb voll, oder gerade beim Steigen auf voll
+   (aria-pressed="true"). Geht die Kachel zurück auf 0, sinkt die Füllung glatt weg. Sonst bliebe kurz ein schmaler
+   Rest am unteren Rand stehen: die Welle über der Füllung und eine Ecke der gekippten Füllung. */
+.tile.part .wv,.tile.slosh[aria-pressed="true"] .wv{opacity:1}
 .tile.part .wv{animation:wave var(--t-wave) linear infinite}
-.tile.slosh .fill{animation:slosh var(--t-slosh) var(--ease)}
+.tile.part.slosh .fill,.tile.slosh[aria-pressed="true"] .fill{animation:slosh var(--t-slosh) var(--ease)}
 .tile.slosh .wv{animation:wave var(--t-wave) linear infinite,swell var(--t-slosh) var(--ease)}
 @keyframes wave{to{transform:translateX(-50%)}}
 @keyframes slosh{20%{rotate:2.4deg}45%{rotate:-1.6deg}70%{rotate:.8deg}}
