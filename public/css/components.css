@@ -38,17 +38,17 @@ button.hint{text-decoration:underline;text-underline-offset:3px}
 /* Welle: nur auf einer halb vollen Kachel (.part). Sie läuft ganz ruhig und steht bei leer und voll still.
    Beim Antippen (.slosh, setzt ui/heute.js für knapp eine Sekunde) kippt die Oberfläche kurz und die Welle wird höher. */
 .tile.part .fill{--wo:4px}
-.wv{position:absolute;left:0;bottom:calc(100% - 1px);width:200%;height:10px;fill:var(--c);opacity:0;transform-origin:50% 100%;transition:opacity var(--t-switch)}
-/* Welle und Schwapper gibt es nur, solange Füllung da ist: halb voll, oder gerade beim Steigen auf voll
-   (aria-pressed="true"). Geht die Kachel zurück auf 0, sinkt die Füllung glatt weg. Sonst bliebe kurz ein schmaler
-   Rest am unteren Rand stehen: die Welle über der Füllung und eine Ecke der gekippten Füllung. */
-.tile.part .wv,.tile.slosh[aria-pressed="true"] .wv{opacity:1}
-.tile.part .wv{animation:wave var(--t-wave) linear infinite}
-.tile.part.slosh .fill,.tile.slosh[aria-pressed="true"] .fill{animation:slosh var(--t-slosh) var(--ease)}
-.tile.slosh .wv{animation:wave var(--t-wave) linear infinite,swell var(--t-slosh) var(--ease)}
+/* Leeren (zurück auf 0): Die Füllung läuft zügig ab und ist dann weg. Kein Federn über das Ziel, kein Nachlauf am
+   unteren Rand (--drain wird schneller statt langsamer). */
+.tile:not(.part):not([aria-pressed="true"]) .fill,.tile:not(.part):not([aria-pressed="true"]) .tc{transition-timing-function:var(--drain);transition-duration:var(--t-drain)}
+.wv{position:absolute;left:0;bottom:calc(100% - 1px);width:200%;height:10px;fill:var(--c);opacity:0;transform-origin:50% 100%}
+/* Die Welle gibt es nur, solange Füllung da ist: halb voll, oder gerade beim Steigen auf voll (aria-pressed="true").
+   Sie erscheint weich und ist sofort weg, wenn die Kachel zurück auf 0 geht: Dann sinkt die Füllung glatt weg.
+   Das Kippen der Oberfläche und das Höherwerden der Welle startet ui/heute.js (schwapp), immer von dort, wo beides
+   gerade steht. So springt nichts, auch wenn man schnell hintereinander tippt. */
+.tile.part .wv,.tile.slosh[aria-pressed="true"] .wv{opacity:1;transition:opacity var(--t-switch)}
+.tile.part .wv,.tile.slosh .wv{animation:wave var(--t-wave) linear infinite}
 @keyframes wave{to{transform:translateX(-50%)}}
-@keyframes slosh{20%{rotate:2.4deg}45%{rotate:-1.6deg}70%{rotate:.8deg}}
-@keyframes swell{25%{scale:1 2.4}60%{scale:1 .6}}
 .tile .tc{position:absolute;inset:0;padding:var(--sp-3) var(--sp-4);display:flex;flex-direction:column;justify-content:space-between;-webkit-clip-path:inset(0 0 calc(var(--p)*100%) 0);clip-path:inset(0 0 calc(var(--p)*100%) 0);transition:clip-path var(--t-fill) var(--spring),-webkit-clip-path var(--t-fill) var(--spring)}
 .tile .tc.on{color:var(--dark);-webkit-clip-path:inset(calc(100% - var(--p)*100%) 0 0 0);clip-path:inset(calc(100% - var(--p)*100%) 0 0 0)}
 .tr{display:flex;justify-content:space-between;align-items:flex-start}
@@ -57,7 +57,7 @@ button.hint{text-decoration:underline;text-underline-offset:3px}
 .cnt{font-size:1.4rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.2}
 .ok{width:30px;height:30px;border-radius:50%;background:var(--dark);color:var(--c);display:grid;place-items:center}
 .tile.slosh .ok{animation:plop var(--t-pop) var(--spring)}  /* der Haken ploppt, nur auf der Kachel, die gerade angetippt wurde */
-.tile.slosh .cnt{animation:bump var(--t-fade) var(--ease)}
+.tile.part.slosh .cnt{animation:bump var(--t-fade) var(--ease)}
 @keyframes plop{from{transform:scale(.2);opacity:0}}
 @keyframes bump{40%{transform:scale(1.12)}}
 .tile.neu{animation:rise var(--t-fade) var(--ease)}          /* eine neue Kachel erscheint weich */

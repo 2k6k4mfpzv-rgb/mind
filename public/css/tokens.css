@@ -29,10 +29,10 @@
   --fs-1:.8rem;--fs-2:.88rem;--fs-3:.95rem;--fs-4:1rem;--fs-5:1.25rem;--fs-6:1.5rem;
 
   /* Bewegung: zwei Kurven, wenige Dauern. --ease gleitet weich aus, --spring federt leicht über das Ziel hinaus
-     (Füllstand, Haken, Blätter). Alle Animationen bewegen nur transform und opacity. Nichts bewegt sich von selbst,
+     (Füllstand, Haken, Blätter), --drain wird schneller und endet ohne Nachlauf (eine Kachel leert sich). Alle Animationen bewegen nur transform und opacity. Nichts bewegt sich von selbst,
      außer der ganz ruhigen Welle auf einer halb vollen Kachel. --t-out muss zu OUT in js/ui/dialog.js passen. */
-  --ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.34,1.45,.64,1);
-  --t-press:.15s;--t-out:.17s;--t-switch:.2s;--t-tab:.24s;--t-fade:.3s;--t-sheet:.42s;--t-pop:.45s;--t-ring:.5s;--t-fill:.55s;--t-slosh:.9s;--t-wave:9s;
+  --ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.34,1.45,.64,1);--drain:cubic-bezier(.4,0,1,1);
+  --t-press:.15s;--t-out:.17s;--t-drain:.3s;--t-switch:.2s;--t-tab:.24s;--t-fade:.3s;--t-sheet:.42s;--t-pop:.45s;--t-ring:.5s;--t-fill:.55s;--t-slosh:.9s;--t-wave:9s;
 
   /* Pro und KI: dunkle Pro-Fläche und der Funke. Diese Werte sind in hell und dunkel gleich, daran erkennt man die
      KI-Stellen überall wieder. Jedes Theme der Sammlung bringt seine eigenen mit (seit Paket 4), im Standard „Puls“

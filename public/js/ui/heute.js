@@ -23,6 +23,22 @@ const WAVE='<svg class="wv" viewBox="0 0 200 10" preserveAspectRatio="none" aria
 const part=p=>p>0&&p<1; // halb voll: Nur dann ist die Welle zu sehen
 let shownIds=null;      // Kacheln vom letzten Zeichnen: Nur wirklich neue erscheinen weich
 const calm=()=>{try{return matchMedia("(prefers-reduced-motion:reduce)").matches}catch(e){return false}};
+// Schwapper: Die Oberfläche kippt kurz hin und her und die Welle wird kurz höher, dann beruhigt sich beides.
+// Beides startet immer von dort, wo es gerade steht. So springt nichts, wenn man schnell hintereinander tippt.
+// an = false (die Kachel wird leer): Die Oberfläche stellt sich nur rasch gerade, die Füllung sinkt glatt weg.
+const SLOSH=900; // Millisekunden, wie --t-slosh in css/tokens.css
+function schwapp(b,an){
+  const fill=b.querySelector(".fill"),wv=b.querySelector(".wv");
+  if(calm()||!fill||!fill.animate)return;
+  const now=(el,k,leer)=>{const v=getComputedStyle(el)[k];return v&&v!=="none"?v:leer};
+  const r=now(fill,"rotate","0deg"),s=now(wv,"scale","1 1"); // erst lesen, dann die laufende Bewegung beenden
+  [fill,wv].forEach(el=>{if(el.sw)el.sw.cancel();el.sw=null});
+  const o={duration:an?SLOSH:180,easing:"ease-out"};
+  if(an){
+    fill.sw=fill.animate([{rotate:r},{rotate:"2.4deg",offset:.2},{rotate:"-1.6deg",offset:.45},{rotate:".8deg",offset:.7},{rotate:"0deg"}],o);
+    wv.sw=wv.animate([{scale:s},{scale:"1 2.4",offset:.25},{scale:"1 .6",offset:.6},{scale:"1 1"}],o);
+  }else if(r!=="0deg")fill.sw=fill.animate([{rotate:r},{rotate:"0deg"}],o);
+}
 
 function renderHeute(){
   const habits=state.habits;
@@ -86,6 +102,7 @@ $("tiles").addEventListener("click",e=>{
   b.style.setProperty("--p",p);b.setAttribute("aria-pressed",p>=1);b.setAttribute("aria-label",tileLab(h));
   b.querySelectorAll(".tc").forEach(x=>x.innerHTML=tileIn(h));
   b.classList.toggle("part",part(p));b.classList.remove("slosh","neu");void b.offsetWidth;b.classList.add("slosh");
+  schwapp(b,p>0);
   clearTimeout(b.sloshT);b.sloshT=setTimeout(()=>b.classList.remove("slosh"),950);
   render(true);
 });

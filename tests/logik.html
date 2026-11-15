@@ -342,10 +342,17 @@ async function run(){
   await ta("Antippen: Die Kachel schwappt kurz (.slosh) und beruhigt sich wieder",async()=>{
     const [i,h]=at(h=>h.unit==="Glas");await D.setCount(h,TJ,2);R.render();tile(i).click();const a=[tile(i).classList.contains("slosh"),tile(i).classList.contains("part"),L.cnt(h,TJ)];
     await sleep(1100);const r=[a,tile(i).classList.contains("slosh")];await D.setCount(h,TJ,5);R.render();return r},[[true,true,3],false]);
+  await ta("Schnell hintereinander (voll, gleich danach leer): Die Welle ist sofort weg und wird nicht höher, die Oberfläche kippt nicht mehr",async()=>{
+    const [i,h]=at(h=>h.unit==="Glas");await D.setCount(h,TJ,h.target-1);R.render();
+    tile(i).click();await sleep(300);tile(i).click();await sleep(60);
+    const wv=tile(i).querySelector(".wv"),f=tile(i).querySelector(".fill"),cs=W.getComputedStyle(wv);
+    const r=[L.cnt(h,TJ),cs.opacity,cs.scale==="none"||cs.scale==="1"||cs.scale==="1 1",!!tile(i).querySelector(".cnt")&&W.getComputedStyle(tile(i).querySelector(".cnt")).animationName];
+    await sleep(300);r.push(Math.abs(parseFloat(W.getComputedStyle(f).rotate)||0)); // die Oberfläche steht wieder gerade
+    await sleep(400);await D.setCount(h,TJ,5);R.render();return r},[0,"0",true,"none",0]);
   await ta("Zurück auf 0: Die Füllung sinkt glatt weg, unten bleibt kein Rest stehen (keine Welle, kein Kippen)",async()=>{
     const [i,h]=at(h=>h.target===1&&sched(h,S.today)),war=L.cnt(h,TJ);await D.setCount(h,TJ,1);R.render();
     tile(i).click();await sleep(300);const wv=tile(i).querySelector(".wv");
-    const r=[L.cnt(h,TJ),tile(i).classList.contains("slosh"),W.getComputedStyle(wv).opacity,W.getComputedStyle(tile(i).querySelector(".fill")).animationName];await quiet();await D.setCount(h,TJ,war);R.render();return r},[0,true,"0","none"]);
+    const r=[L.cnt(h,TJ),tile(i).classList.contains("slosh"),W.getComputedStyle(wv).opacity,W.getComputedStyle(tile(i).querySelector(".fill")).animationName,W.matchMedia("(prefers-reduced-motion:reduce)").matches||W.getComputedStyle(tile(i).querySelector(".fill")).transitionTimingFunction==="cubic-bezier(0.4, 0, 1, 1)"];await quiet();await D.setCount(h,TJ,war);R.render();return r},[0,true,"0","none",true]);
   await ta("Neues Habit mit Einheit anlegen",async()=>{
     type("inp","Liegestütze");$("atg").value=3;$("aun").value="Satz";$("aup").value="Sätze";
     $("form").dispatchEvent(new W.Event("submit",{bubbles:true,cancelable:true}));await quiet();
