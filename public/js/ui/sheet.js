@@ -6,6 +6,10 @@ import {clampT,daytimeOf,nextCol} from "../logic.js";
 import * as data from "../data.js";
 import {$,daysHtml,colsHtml,icosHtml,optsHtml} from "./dom.js";
 import {render,onRender} from "./render.js";
+import {openDlg,shut,bind} from "./dialog.js";
+
+const sh=$("sheet");
+bind(sh); // Escape und nach unten wischen schließen weich (ui/dialog.js)
 
 const pickers=()=>{$("acol").innerHTML=colsHtml(ui.acol,"a");$("aico").innerHTML=icosHtml(ui.aico,"a",HEX[ui.acol])};
 // Vorgewählt: die am wenigsten benutzte Farbe und kein Symbol (Anfangsbuchstabe).
@@ -19,19 +23,19 @@ export function openSheet(pre){
     $("form").querySelector(".more").open=pre.target>1||!!pre.daytime||!!pre.unit;
     render();
   }
-  $("sheet").showModal();
+  openDlg(sh);
 }
 
 onRender(()=>{$("days").innerHTML=daysHtml(ui.sel,"d")});
 $("days").onclick=e=>{const b=e.target.closest("button");if(!b)return;const i=+b.dataset.d;ui.sel=ui.sel.includes(i)?ui.sel.filter(x=>x!==i):ui.sel.concat(i);render()};
 $("acol").onclick=e=>{const b=e.target.closest("button");if(b){ui.acol=b.dataset.acol;pickers()}};
 $("aico").onclick=e=>{const b=e.target.closest("button");if(b){ui.aico=b.dataset.aico;pickers()}};
-$("shx").onclick=()=>$("sheet").close();
-$("sheet").addEventListener("click",e=>{if(e.target===e.currentTarget)e.currentTarget.close()}); // neben das Blatt tippen schließt es
+$("shx").onclick=()=>shut(sh);
+sh.addEventListener("click",e=>{if(e.target===sh)shut(sh)}); // neben das Blatt tippen schließt es
 $("form").addEventListener("submit",e=>{
   e.preventDefault();const v=$("inp").value.trim();if(!v){$("inp").focus();return}
   if(!ui.sel.length)ui.sel=[0,1,2,3,4,5,6];
   data.addHabit({name:v,days:ui.sel.slice().sort(),cat:$("cat").value.trim(),color:ui.acol,icon:ui.aico,created:TI,pos:state.habits.reduce((m,h)=>Math.max(m,h.pos||0),0)+1,target:clampT($("atg").value),daytime:daytimeOf($("adt").value,$("atm").value),unit:$("aun").value.trim(),unit_pl:$("aup").value.trim()});
-  $("inp").value="";$("aopts").innerHTML=optsHtml("a",1,"","","","");$("sheet").close();
+  $("inp").value="";$("aopts").innerHTML=optsHtml("a",1,"","","","");shut(sh);
 });
 $("aopts").innerHTML=optsHtml("a",1,"","","","");

@@ -24,7 +24,8 @@ const busy=()=>ui.ed||document.querySelector("dialog[open]"); // gerade wird bea
 data.on("change",from=>{if(from==="remote"&&busy())return;render()});
 
 // --- Tab-Leiste (Heute, Verlauf, MIND, Sammlung, Ich). Der MIND-Knopf in der Mitte ist kein Bereich: Er öffnet den KI-Chat als Blatt (ui/ki.js). ---
-const tab=v=>{document.querySelectorAll(".view").forEach(s=>s.hidden=s.id!=="v-"+v);document.querySelectorAll("#tabs button").forEach(b=>b.dataset.tab===v?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));window.scrollTo(0,0);if(v==="sammlung")openSammlung()};
+// Der neue Bereich blendet kurz über (.in, css/components.css).
+const tab=v=>{document.querySelectorAll(".view").forEach(s=>{const on=s.id==="v-"+v;if(on&&s.hidden){s.classList.remove("in");void s.offsetWidth;s.classList.add("in")}s.hidden=!on});document.querySelectorAll("#tabs button").forEach(b=>b.dataset.tab===v?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));window.scrollTo(0,0);if(v==="sammlung")openSammlung()};
 $("tabs").onclick=e=>{const b=e.target.closest("button");if(b&&b.dataset.tab)tab(b.dataset.tab)};
 // Tageszeit "Uhrzeit" gewählt: das Uhrzeit-Feld daneben zeigen (im Blatt und beim Bearbeiten)
 document.addEventListener("change",e=>{const t=e.target.dataset&&e.target.dataset.tm;if(t)$(t).hidden=e.target.value!=="zeit"});

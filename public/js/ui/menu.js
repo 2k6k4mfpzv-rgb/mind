@@ -4,11 +4,13 @@
 import {state,ui,today,TI} from "../state.js";
 import {pauseOn,pauseList,resumeList,colKey,hexOf} from "../logic.js";
 import * as data from "../data.js";
-import {$,esc,icoOf,colsHtml,pauseLabel,SPARK,PRO} from "./dom.js";
+import {$,esc,icoOf,colsHtml,pauseLabel,SPARK,PRO,X} from "./dom.js";
 import {render,onRender} from "./render.js";
 import {editHtml,startEdit,bindEdit} from "./edit.js";
+import {openDlg,shut,bind,isOpen,closing,settle} from "./dialog.js";
 
 const dlg=$("menu");
+bind(dlg); // Escape und nach unten wischen schließen weich (ui/dialog.js)
 const ICON={
   edit:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>',
   pause:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5.5v13M15 5.5v13"/></svg>',
@@ -18,31 +20,33 @@ const ICON={
 export const resume=h=>data.updateHabit(h,{paused:resumeList(h,today)});
 // view: "main" (Übersicht) oder "pause" (direkt zum Pausieren, z. B. aus dem Verlauf)
 export function openMenu(i,view){
-  if(dlg.open||!state.habits[i])return;
-  ui.menu={i,view:view||"main"};draw();dlg.showModal();
+  if(isOpen(dlg)||!state.habits[i])return;
+  settle(dlg);ui.menu={i,view:view||"main"};draw();openDlg(dlg);
 }
 // Direkt zum Bearbeiten, mit Werten, die schon eingetragen sind (Vorschlag der KI "Anpassen", ui/ki.js)
 export function openEdit(i,over){
-  if(dlg.open||!state.habits[i])return;
-  ui.menu={i,view:"edit"};startEdit(i,true);Object.assign(ui.ed,over,{more:true});draw();dlg.showModal();
+  if(isOpen(dlg)||!state.habits[i])return;
+  settle(dlg);ui.menu={i,view:"edit"};startEdit(i,true);Object.assign(ui.ed,over,{more:true});draw();openDlg(dlg);
 }
-// Schließen: aufräumen und neu zeichnen, damit "Heute" gleich den neuen Stand zeigt. done() läuft sofort und noch einmal,
-// wenn der Browser das Schließen meldet (z. B. nach Escape). Der zweite Aufruf findet nichts mehr zu tun.
+// Schließen: Das Blatt gleitet hinaus (ui/dialog.js). Ist es zu, räumt done() auf und zeichnet neu, damit "Heute" den
+// neuen Stand zeigt. done() läuft bei "shut" (sofort) und noch einmal, wenn der Browser das Schließen meldet. Der zweite
+// Aufruf findet nichts mehr zu tun. now = ohne Hinausgleiten (ein anderes Blatt übernimmt).
 function done(){
   if(ui.ed&&ui.ed.sheet)ui.ed=null;
   if(!ui.menu)return;
   ui.menu=null;$("mnI").innerHTML="";render();
 }
-const close=()=>{if(dlg.open)dlg.close();done()};
+const close=now=>{if(dlg.open)shut(dlg,now);else done()};
 
 function draw(){
+  if(closing(dlg))return; // gleitet gerade hinaus: so lassen, wie es ist
   const m=ui.menu,h=m&&state.habits[m.i];
   if(!h||m.view==="edit"&&!ui.ed){close();return} // Habit weg, oder Bearbeiten ist fertig (gespeichert oder abgebrochen)
   const pz=pauseOn(h,TI),title={main:h.name,pause:"Pausieren",edit:"Bearbeiten"}[m.view];
-  let x=`<i class="grab"></i><div class="shh"><span class="mh"><span class="ini" style="--c:${hexOf(h)}">${icoOf(h)}</span><b id="mnT">${esc(title)}</b></span><button type="button" class="del" data-mx="1">Schließen</button></div>`;
+  let x=`<i class="grab"></i><div class="shh"><span class="mh"><span class="ini" style="--c:${hexOf(h)}">${icoOf(h)}</span><b id="mnT">${esc(title)}</b></span><button type="button" class="xb" data-mx="1" aria-label="Schließen">${X}</button></div>`;
   if(m.view==="edit")x+=editHtml();
-  else if(m.view==="pause")x+=`<p class="note first">Ab heute zählt „${esc(h.name)}“ nicht mehr als geplant. Deine Konstanz und deine Serie bleiben, wie sie sind.</p><label class="flab">Bis einschließlich (optional)<input type="date" id="mpto" min="${TI}"></label><p class="note">Ohne Datum pausiert es, bis du es fortsetzt. Mit Datum läuft es danach von selbst weiter.</p><div class="set"><button type="button" class="btn" data-mpok="1">Pausieren</button><button type="button" class="btn ghost" data-mback="1">Zurück</button></div>`;
-  else x+=`${pz?`<p class="note first">${pauseLabel(pz)}. Pausierte Tage zählen nicht als verpasst.</p>`:""}<div class="flab">Farbe${colsHtml(colKey(h),"m")}</div><div class="mrows"><button type="button" data-medit="1">${ICON.edit}Bearbeiten</button>${pz?`<button type="button" data-mres="1">${ICON.play}Fortsetzen</button>`:`<button type="button" data-mpause="1">${ICON.pause}Pausieren</button>`}<button type="button" data-ki="mini" data-i="${m.i}">${SPARK}Mini-Version vorschlagen${PRO}</button></div>`;
+  else if(m.view==="pause")x+=`<p class="note first">Pausierte Tage zählen nicht als verpasst. Ohne Datum pausiert es, bis du es fortsetzt.</p><label class="flab">Bis einschließlich (optional)<input type="date" id="mpto" min="${TI}"></label><div class="set"><button type="button" class="btn" data-mpok="1">Pausieren</button><button type="button" class="btn ghost" data-mback="1">Zurück</button></div>`;
+  else x+=`${pz?`<p class="note first">${pauseLabel(pz)}</p>`:""}<div class="flab">Farbe${colsHtml(colKey(h),"m")}</div><div class="mrows"><button type="button" data-medit="1">${ICON.edit}Bearbeiten</button>${pz?`<button type="button" data-mres="1">${ICON.play}Fortsetzen</button>`:`<button type="button" data-mpause="1">${ICON.pause}Pausieren</button>`}<button type="button" data-ki="mini" data-i="${m.i}">${SPARK}Mini-Version vorschlagen${PRO}</button></div>`;
   $("mnI").innerHTML=x;
 }
 onRender(()=>{if(dlg.open)draw()});
@@ -52,7 +56,8 @@ dlg.addEventListener("click",e=>{
   if(e.target===dlg){if(!hold)close();return} // neben das Blatt tippen schließt es
   const b=e.target.closest("button"),m=ui.menu;if(!b||!m||!dlg.open)return;
   const ds=b.dataset,h=state.habits[m.i];
-  if(ds.mx||ds.ki)close(); // data-ki: Das Blatt macht Platz, den KI-Chat öffnet ui/ki.js
+  if(ds.mx)close();
+  else if(ds.ki)close(true); // data-ki: Das Blatt macht sofort Platz, den KI-Chat öffnet ui/ki.js
   else if(ds.mcol){data.updateHabit(h,{color:ds.mcol});render()}
   else if(ds.medit){m.view="edit";startEdit(m.i,true);draw()}
   else if(ds.mpause){m.view="pause";draw()}
@@ -60,7 +65,7 @@ dlg.addEventListener("click",e=>{
   else if(ds.mpok){data.updateHabit(h,{paused:pauseList(h,today,$("mpto").value)});close()}
   else if(ds.mres){resume(h);close()}
 });
-dlg.addEventListener("close",done);
+dlg.addEventListener("shut",done);dlg.addEventListener("close",done);
 
 // --- Lange drücken ---
 // Eine halbe Sekunde auf der Kachel bleiben öffnet das Blatt. Bewegt sich der Finger (Scrollen) oder lässt er vorher

@@ -4,7 +4,7 @@ import {DAYS} from "../config.js";
 import {state,ui,today,TI} from "../state.js";
 import {iso,addDays,monday,sched,cnt,tg,total,streak,konst,range,weekdayPattern,pauseOn,hexOf} from "../logic.js";
 import * as data from "../data.js";
-import {$,esc,fmt,CHECK,dtLabel,icoOf,pauseLabel,SPARK,PRO} from "./dom.js";
+import {$,esc,fmt,CHECK,icoOf,pauseLabel,SPARK,PRO} from "./dom.js";
 import {render,onRender} from "./render.js";
 import {offerUndo} from "./toast.js";
 import {editHtml,startEdit,bindEdit} from "./edit.js";
@@ -39,11 +39,11 @@ function weekHtml(h,hi,li,len,start,tot){
     }
     x+="</span>";
   }
-  return x+`</div><p class="meta">Insgesamt ${tot}× geschafft · Serie ${s} ${s===1?"Tag":"Tage"}${h.target>1?" · "+h.target+(h.unit?" "+esc(h.unit_pl||h.unit):"×")+" täglich":""}${h.daytime?" · "+esc(dtLabel(h.daytime)):""}${h.cat?" · "+esc(h.cat):""}${pz?" · "+pauseLabel(pz):""}</p><div class="acts"><button data-up="${hi}" aria-label="${esc(h.name)} nach oben"${li===0?" disabled":""}>↑</button><button data-down="${hi}" aria-label="${esc(h.name)} nach unten"${li===len-1?" disabled":""}>↓</button><button data-edit="${hi}">Bearbeiten</button><button data-pz="${hi}">${pz?"Fortsetzen":"Pausieren"}</button><button class="kia" data-ki="muster" data-i="${hi}">${SPARK}Muster erklären${PRO}</button><button data-del="${hi}"${ui.pend===hi?' class="warn"':""}>${ui.pend===hi?"Wirklich löschen?":"Löschen"}</button></div></div>`;
+  return x+`</div><p class="meta">Insgesamt ${tot}× geschafft · Serie ${s} ${s===1?"Tag":"Tage"}${pz?" · "+pauseLabel(pz):""}</p><div class="acts"><button data-up="${hi}" aria-label="${esc(h.name)} nach oben"${li===0?" disabled":""}>↑</button><button data-down="${hi}" aria-label="${esc(h.name)} nach unten"${li===len-1?" disabled":""}>↓</button><button data-edit="${hi}">Bearbeiten</button><button data-pz="${hi}">${pz?"Fortsetzen":"Pausieren"}</button><button class="kia" data-ki="muster" data-i="${hi}">${SPARK}Muster erklären${PRO}</button><button data-del="${hi}"${ui.pend===hi?' class="warn"':""}>${ui.pend===hi?"Wirklich löschen?":"Löschen"}</button></div></div>`;
 }
 function card(h,hi,li,len,start){
   const tot=total(h),k=konst([h],today),o=ui.openId===h.id,hx=hexOf(h);
-  const kr=`<span class="hr"><svg width="54" height="54" viewBox="0 0 54 54"><circle class="rt" cx="27" cy="27" r="23"/>${k?`<circle class="rp" cx="27" cy="27" r="23" style="stroke-dasharray:${(k/100*HR).toFixed(1)} ${HR.toFixed(1)}"/>`:""}</svg><b>${k==null?"–":k+"%"}</b></span>`;
+  const kr=`<span class="hr"><svg viewBox="0 0 54 54"><circle class="rt" cx="27" cy="27" r="23"/>${k?`<circle class="rp" cx="27" cy="27" r="23" style="stroke-dasharray:${(k/100*HR).toFixed(1)} ${HR.toFixed(1)}"/>`:""}</svg><b>${k==null?"–":k+"%"}</b></span>`;
   return `<div class="panel hc" style="--hc:${hx}"><button class="hh" data-open="${hi}" aria-expanded="${o}" aria-label="${esc(h.name)}: Konstanz ${k==null?"noch keine":k+" Prozent"}, insgesamt ${tot}-mal geschafft"><span class="hht"><span class="ini" style="--c:${hx}">${icoOf(h)}</span><b>${esc(h.name)}</b>${pauseOn(h,TI)?'<span class="pz">Pausiert</span>':""}</span><span class="hb" aria-hidden="true"><span class="mo">${mosaic(h)}</span><span class="st">${kr}<small>Konstanz</small></span></span></button>${o?(ui.ed&&!ui.ed.sheet&&ui.ed.i===hi?editHtml():weekHtml(h,hi,li,len,start,tot)):""}</div>`;
 }
 function kpi(i,r){$("k"+i).innerHTML=r[0]+"<em>von "+r[1]+"</em>";$("b"+i).style.width=(r[1]?r[0]/r[1]*100:0)+"%"}
@@ -56,7 +56,7 @@ function renderVerlauf(){
 
   const start=addDays(monday(today),ui.offset*7);
   const list=habits.map((h,i)=>[h,i]).filter(([h])=>!ui.filter||h.cat===ui.filter);
-  $("grid").innerHTML=list.length?list.map(([h,hi],li)=>card(h,hi,li,list.length,start)).join(""):'<p class="empty">Noch keine Habits. Leg unter „Heute“ dein erstes an.</p>';
+  $("grid").innerHTML=list.length?list.map(([h,hi],li)=>card(h,hi,li,list.length,start)).join(""):data.loaded()?'<p class="empty">Noch keine Habits. Leg unter „Heute“ dein erstes an.</p>':"";
 
   const ws=monday(today),ms=new Date(today.getFullYear(),today.getMonth(),1),m3=addDays(today,-90);
   kpi(1,range(habits,ws,today,today));kpi(2,range(habits,ms,today,today));kpi(3,range(habits,m3,today,today));

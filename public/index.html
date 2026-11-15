@@ -29,6 +29,7 @@
 <link rel="modulepreload" href="js/pwa.js">
 <link rel="modulepreload" href="js/ui/dom.js">
 <link rel="modulepreload" href="js/ui/render.js">
+<link rel="modulepreload" href="js/ui/dialog.js">
 <link rel="modulepreload" href="js/ui/toast.js">
 <link rel="modulepreload" href="js/ui/sheet.js">
 <link rel="modulepreload" href="js/ui/edit.js">
@@ -50,10 +51,10 @@
   </form>
 </div>
 <main id="app" hidden>
-<p class="note" id="err" role="alert" style="color:var(--ink)"></p>
-<!-- Ruhige Hinweise oben (kein Popup): ohne Netz, und wenn eine neue Version bereitliegt -->
-<p class="note" id="net" role="status"></p>
-<button class="upd" id="upd" hidden>Neue Version von MIND. Tippen zum Aktualisieren.</button>
+<!-- Ruhige Hinweise oben (kein Popup), alle im selben Stil: Speichern hat nicht geklappt, ohne Netz, neue Version -->
+<p class="hint" id="err" role="alert"></p>
+<p class="hint" id="net" role="status"></p>
+<button class="hint" id="upd" hidden>Neue Version von MIND. Tippen zum Aktualisieren.</button>
 
 <!-- Puls: Startseite Heute. Kacheln füllen sich beim Antippen, der Ring zeigt den ganzen Tag. -->
 <section class="view" id="v-heute">
@@ -70,9 +71,9 @@
 
 <!-- Verlauf: pro Habit eine Karte mit 12-Wochen-Mosaik, aufklappbar (nachtragen, bearbeiten). Darunter Fortschritt und Muster. -->
 <section class="view" id="v-verlauf" hidden>
-  <h1>Verlauf</h1><p class="sub">Die Punkte zeigen die letzten 12 Wochen, der Ring deine Konstanz der letzten 30 Tage.</p>
-  <!-- KI-Einstieg (Paket 3): öffnet den Chat mit dem Thema "Woche besprechen". Dunkle Pro-Fläche, Funke in Koralle. -->
-  <button class="prox kiw" id="kiW" data-ki="woche" hidden><svg class="sp" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3.5l1.7 5 5 1.7-5 1.7-1.7 5-1.7-5-5-1.7 5-1.7z"/><path d="M18 13.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/></svg><span><b>Woche besprechen</b><small>Kurz mit MIND auf deine letzten 7 Tage schauen</small></span><span class="pro">PRO</span></button>
+  <h1>Verlauf</h1><p class="sub">Punkte: die letzten 12 Wochen. Ring: deine Konstanz.</p>
+  <!-- KI-Einstieg: öffnet den Chat mit dem Thema "Woche besprechen". Dunkle Pro-Fläche, Funke-Feld in der Farbe des Themes. -->
+  <button class="prox kiw" id="kiW" data-ki="woche" hidden><span class="spk"><svg class="sp" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3.5l1.7 5 5 1.7-5 1.7-1.7 5-1.7-5-5-1.7 5-1.7z"/><path d="M18 13.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/></svg></span><b>Woche besprechen</b><span class="pro">PRO</span></button>
   <div class="chips" id="chips"></div>
   <div class="hcs" id="grid"></div>
   <button class="panel thc" id="thc" hidden></button>
@@ -82,10 +83,9 @@
       <div class="k"><span>Diese Woche</span><b id="k1"></b><div><i id="b1"></i></div></div>
       <div class="k"><span>Dieser Monat</span><b id="k2"></b><div><i id="b2"></i></div></div>
       <div class="k"><span>Letzte 3 Monate</span><b id="k3"></b><div><i id="b3"></i></div></div>
-      <p class="note">Erledigte Habits im Vergleich zu dem, was geplant war.</p>
     </div>
     <div class="ovm">
-      <div class="cap">Muster</div><h2>Sieh, wo du dranbleibst.</h2><p class="note">Erledigt ÷ geplant, letzte 12 Wochen, nach Wochentag.</p>
+      <div class="cap">Muster · 12 Wochen</div><h2>Sieh, wo du dranbleibst.</h2>
       <div class="wd" id="wd"></div>
     </div>
   </div>
@@ -96,38 +96,46 @@
   <h1>Sammlung</h1><p class="sub">Themes schaltest du mit deinen Tagen frei. Sie zählen insgesamt, nicht am Stück.</p>
   <div class="panel kc"><div><small>Tage insgesamt</small><b id="smN"></b></div><span class="pill" id="smP"></span></div>
   <div class="ths" id="ths" role="radiogroup" aria-label="Theme"></div>
-  <p class="note">Ein Tag zählt, sobald du mindestens ein Habit geschafft hast. Was einmal frei ist, bleibt frei.</p>
 </section>
 
-<!-- Ich: Einstellungen (Profil liegt in der Tabelle profiles) -->
+<!-- Ich: Einstellungen wie beim iPhone (Gruppen, eine Zeile pro Punkt, keine Unterzeilen). Das Profil liegt in der Tabelle profiles. -->
 <section class="view" id="v-ich" hidden>
-  <h1>Ich</h1><p class="sub">Profil und Einstellungen</p>
-  <div class="panel">
-    <div class="ph"><span class="cap">Einstellungen</span><span class="cap"><span id="saved" class="saved" aria-live="polite"></span></span></div>
-    <div class="sg">
-      <div class="cap">Profil</div>
+  <div class="ihd"><h1>Ich</h1><span id="saved" class="saved" aria-live="polite"></span></div>
+  <div class="sg">
+    <div class="cap">Profil</div>
+    <div class="panel">
       <label class="sr"><span>Name</span><input id="pname" maxlength="40" placeholder="Optional" autocomplete="name"></label>
       <label class="sr"><span>Zeitzone</span><select id="ptz"></select></label>
-      <div class="sr"><span>Tarif</span><span class="badge" id="pplan"></span></div>
+      <div class="sr"><span>Tarif</span><span class="sv" id="pplan"></span></div>
     </div>
-    <div class="sg">
-      <div class="cap">Erinnerung</div>
-      <label class="sr"><span>Tägliche Erinnerung<small>Eine Nachricht am Tag, nur wenn noch Habits offen sind</small></span><input type="checkbox" id="remOn" class="sw" role="switch"></label>
+  </div>
+  <div class="sg">
+    <div class="cap">Erinnerung</div>
+    <div class="panel">
+      <label class="sr"><span>Tägliche Erinnerung</span><input type="checkbox" id="remOn" class="sw" role="switch"></label>
       <label class="sr"><span>Uhrzeit</span><input type="time" id="remTime" value="20:00"></label>
-      <div class="sr" id="remDev" hidden><span>Dieses Gerät<small id="remNote" aria-live="polite"></small></span><button class="btn ghost sm" id="remBtn" hidden></button></div>
+      <div class="sr" id="remDev" hidden><span>Dieses Gerät</span><span class="sv" id="remVal"></span><button class="sb" id="remBtn" hidden></button></div>
+      <p class="sn" id="remNote" aria-live="polite" hidden></p>
     </div>
-    <div class="sg">
-      <div class="cap">Daten</div>
-      <div class="sr"><span>Backup<small>Alle Habits als Text in die Zwischenablage</small></span><button class="btn ghost sm" id="copy">Daten kopieren</button></div>
-      <details class="restore"><summary>Aus Backup wiederherstellen</summary>
-        <p class="note">Füge ein kopiertes Backup ein. Alle aktuellen Daten werden dabei ersetzt.</p>
-        <textarea id="data" aria-label="Backup als Text" spellcheck="false" placeholder="Backup hier einfügen"></textarea>
-        <button class="btn ghost sm" id="imp" style="margin-top:10px">Importieren</button>
+  </div>
+  <div class="sg">
+    <div class="cap">Daten</div>
+    <div class="panel">
+      <button class="sr go" id="copy"><span id="copyT">Daten kopieren</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5.5l6.5 6.5L9 18.5"/></svg></button>
+      <details class="restore"><summary class="sr go"><span>Aus Backup wiederherstellen</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5.5l6.5 6.5L9 18.5"/></svg></summary>
+        <div class="rsb">
+          <p class="sn">Füge ein kopiertes Backup ein. Alle aktuellen Daten werden dabei ersetzt.</p>
+          <textarea id="data" aria-label="Backup als Text" spellcheck="false" placeholder="Backup hier einfügen"></textarea>
+          <button class="btn ghost sm" id="imp">Importieren</button>
+        </div>
       </details>
     </div>
-    <div class="sg">
-      <div class="cap">Konto</div>
-      <div class="sr"><span>Angemeldet<small id="pmail"></small></span><button class="btn ghost sm" id="out">Abmelden</button></div>
+  </div>
+  <div class="sg">
+    <div class="cap">Konto</div>
+    <div class="panel">
+      <div class="sr"><span>E-Mail</span><span class="sv" id="pmail"></span></div>
+      <button class="sr out" id="out">Abmelden</button>
     </div>
   </div>
 </section>
@@ -136,17 +144,17 @@
 <nav class="tabs" id="tabs" aria-label="Bereiche">
   <button data-tab="heute" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>Heute</button>
   <button data-tab="verlauf"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-7M12 20V5M19 20v-10"/></svg>Verlauf</button>
-  <!-- MIND-Knopf: kein Bereich, sondern der KI-Chat als Blatt von unten (js/ui/ki.js) -->
-  <button data-ki="" aria-haspopup="dialog"><svg class="sp" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3.5l1.7 5 5 1.7-5 1.7-1.7 5-1.7-5-5-1.7 5-1.7z"/><path d="M18 13.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/></svg>MIND</button>
+  <!-- MIND-Knopf: kein Bereich, sondern der KI-Chat als Blatt von unten (js/ui/ki.js). Rund, erhöht, in der Mitte. -->
+  <button class="mind" data-ki="" aria-haspopup="dialog"><span class="orb"><svg class="sp" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3.5l1.7 5 5 1.7-5 1.7-1.7 5-1.7-5-5-1.7 5-1.7z"/><path d="M18 13.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/></svg></span>MIND</button>
   <button data-tab="sammlung"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg>Sammlung</button>
   <button data-tab="ich"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20.2c1.3-3.7 4.1-5.2 7.2-5.2s5.9 1.5 7.2 5.2"/></svg>Ich</button>
 </nav>
 
 <datalist id="cats"></datalist>
 <dialog class="sheet" id="sheet" aria-labelledby="shT">
-<div class="shi">
+<div class="shi" tabindex="-1">
   <i class="grab"></i>
-  <div class="shh"><b id="shT">Neues Habit</b><button type="button" class="del" id="shx">Schließen</button></div>
+  <div class="shh"><b id="shT">Neues Habit</b><button type="button" class="xb" id="shx" aria-label="Schließen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button></div>
   <form class="add" id="form">
     <input id="inp" placeholder="z. B. 10 Seiten lesen" maxlength="40" aria-label="Name">
     <button type="button" class="kil" data-ki="formulieren"><svg class="sp" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3.5l1.7 5 5 1.7-5 1.7-1.7 5-1.7-5-5-1.7 5-1.7z"/><path d="M18 13.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/></svg>Hilf mir formulieren<span class="pro">PRO</span></button>
@@ -157,13 +165,12 @@
     <input id="cat" placeholder="Kategorie (optional)" maxlength="20" aria-label="Kategorie" list="cats">
     <button class="btn" type="submit">Hinzufügen</button>
   </form>
-  <p class="note">Wähle, an welchen Tagen das Habit zählt. Alle anderen Tage bleiben leer.</p>
 </div>
 </dialog>
 <!-- Blatt der Kachel (lange drücken oder Rechtsklick): Farbe, Bearbeiten, Pausieren. Inhalt zeichnet js/ui/menu.js -->
-<dialog class="sheet" id="menu" aria-labelledby="mnT"><div class="shi" id="mnI"></div></dialog>
+<dialog class="sheet" id="menu" aria-labelledby="mnT"><div class="shi" id="mnI" tabindex="-1"></div></dialog>
 <!-- KI-Chat (MIND-Knopf und die KI-Einstiege). Inhalt zeichnet js/ui/ki.js -->
-<dialog class="sheet" id="ki" aria-labelledby="kiT"><div class="shi" id="kiI"></div></dialog>
+<dialog class="sheet" id="ki" aria-labelledby="kiT"><div class="shi" id="kiI" tabindex="-1"></div></dialog>
 </main>
 
 <!-- Supabase-Bibliothek, selbst gehostet (Version in js/vendor/LIES-MICH.txt), damit MIND ohne Netz startet.
