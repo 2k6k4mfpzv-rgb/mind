@@ -116,7 +116,7 @@ function kiAnswer(b){
   const n=b.msgs.filter(m=>m.role==="user").length,nr=+((b.ctx||"").match(/Im Mittelpunkt: Nr\. (\d+)/)||[0,1])[1];
   if(b.kind==="mini")return{text:"An einem schlechten Tag reichen zwei Minuten. Hauptsache, du bleibst dran.",vorschlag:{art:"aendern",nr,name:"2 Minuten "+(store.habits[nr-1]||{name:"dranbleiben"}).name,ziel:1}};
   if(b.kind==="muster")return{text:"Unter der Woche läuft es gut, am Wochenende deutlich seltener. Was ist samstags und sonntags anders?",vorschlag:null};
-  if(b.kind==="woche")return n<2?{text:"Wasser lief richtig gut, an 6 von 7 Tagen. Beim Lesen hakt es eher. Was war an den Abenden los?",vorschlag:null}:{text:"Dann mach es abends kleiner. Zwei Seiten gehen auch müde.",vorschlag:{art:"aendern",nr:3,name:"2 Seiten lesen",ziel:1}};
+  if(b.kind==="woche")return n<2?{text:"Wasser lief richtig gut, an 6 von 7 Tagen. Beim Lesen hakt es eher. Was war an den Abenden los?",vorschlag:null,antworten:["Abends zu müde","Keine Zeit","Weiß nicht"]}:{text:"Dann mach es abends kleiner. Zwei Seiten gehen auch müde.",vorschlag:{art:"aendern",nr:3,name:"2 Seiten lesen",ziel:1}};
   if(b.kind==="formulieren"||b.kind==="neu"&&n>1)return{text:"Fang klein an: zehn Minuten, an festen Tagen.",vorschlag:{art:"neu",name:"10 Minuten spazieren",tage:[0,1,2,3,4],ziel:1,einheit:"10 Minuten",mehrzahl:"",zeit:"abend"}};
   if(b.kind==="neu")return{text:"Gern. Worum geht es, und wann am Tag passt es dir am besten?",vorschlag:null};
   return{text:"Das ist die Testversion ohne echte KI. Hier steht später die Antwort von MIND.",vorschlag:null};

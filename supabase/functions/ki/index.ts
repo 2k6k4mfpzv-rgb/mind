@@ -14,14 +14,18 @@ import {run} from "./coach.js";
 // Wechseln heißt: diese Werte ändern und den neuen Schlüssel als Geheimnis eintragen. Mistral, Groq und
 // Cloudflare sprechen dieselbe Schnittstelle (Chat Completions).
 // Cloudflare Workers AI (seit 12.11.2026): kostenlos bis 10.000 "Neurons" am Tag für die ganze App, die Eingaben
-// werden nicht zum Training genutzt. Das Modell ist das kleine von Mistral, es läuft bei Cloudflare.
+// werden nicht zum Training genutzt und nicht aufbewahrt. Modell seit 16.11.2026: gpt-oss-120b (offenes Modell von
+// OpenAI, läuft bei Cloudflare). Es denkt kurz nach, bevor es antwortet, und kostet praktisch so viel wie das kleine
+// Mistral-Modell davor (rund 60 Neurons pro Nachricht, also etwa 160 Nachrichten am Tag für alle zusammen).
+// Gemessen an 14 Testgesprächen: Mistral nannte falsche Zahlen, dieses nicht. Zurück geht es mit einer Zeile:
+// model:"@cf/mistralai/mistral-small-3.1-24b-instruct".
 // Mistral direkt (api.mistral.ai, Modell "mistral-small-latest") gibt es nur noch mit bezahltem Guthaben. Das ist
 // der Weg für später, wenn es Pro gibt, siehe PROJEKTDOKU.md Abschnitt 4.
 // Zwei Geheimnisse: CLOUDFLARE_ACCOUNT_ID (die Konto-Nummer, gehört zur Adresse) und CLOUDFLARE_API_TOKEN.
 const ACCOUNT=(Deno.env.get("CLOUDFLARE_ACCOUNT_ID")||"").trim();
 const PROVIDER={
   url:"https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(ACCOUNT)+"/ai/v1/chat/completions",
-  model:"@cf/mistralai/mistral-small-3.1-24b-instruct",
+  model:"@cf/openai/gpt-oss-120b",
   secret:"CLOUDFLARE_API_TOKEN"   // Name des Geheimnisses, nicht der Schlüssel selbst
 };
 // Pro einführen (Roadmap B4): Geheimnis MIND_PRO auf "on" setzen. Dann gilt für alle ohne plan "premium" die
@@ -44,8 +48,8 @@ async function ask(key:string,body:Record<string,unknown>):Promise<string>{
   const send=(b:unknown)=>fetch(PROVIDER.url,{method:"POST",signal:AbortSignal.timeout(25000),
     headers:{"Content-Type":"application/json",Authorization:"Bearer "+key},body:JSON.stringify(b)});
   let r=await send(body);
-  // Manche Modelle kennen die Angabe "antworte als JSON" nicht: dann ohne sie (coach.js kommt auch mit Text zurecht)
-  if(r.status===400){const {response_format:_,...rest}=body;r=await send(rest)}
+  // Manche Modelle kennen "antworte als JSON" oder "denk kurz nach" nicht: dann ohne beides (coach.js kommt auch mit Text zurecht)
+  if(r.status===400){const {response_format:_,reasoning_effort:__,...rest}=body;r=await send(rest)}
   if(r.status===429)throw Object.assign(new Error("Anbieter 429"),{busy:true});
   if(!r.ok)throw new Error("Anbieter "+r.status);
   const j=await r.json();

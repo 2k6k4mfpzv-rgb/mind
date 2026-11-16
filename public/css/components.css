@@ -390,6 +390,10 @@ dialog#ki{--sheet:var(--pro);color:var(--proInk);color-scheme:dark}
 .kdots i:nth-child(2){animation-delay:.15s}.kdots i:nth-child(3){animation-delay:.3s}
 @keyframes kw{0%,70%,100%{opacity:.3;transform:scale(.8)}35%{opacity:1;transform:scale(1)}}
 /* Vorschlagskarte: klein "VORSCHLAG", darunter groß der Vorschlag, dann Übernehmen (gefüllt) und Anpassen */
+/* Antworten zum Antippen unter einer Frage von MIND: ruhige Umriss-Knöpfe, sie brechen um */
+.kia{grid-column:2;display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.kia button{min-height:40px;padding:0 var(--sp-4);border-radius:var(--r-pill);border:1px solid color-mix(in srgb,var(--spark) 55%,transparent);color:var(--proInk);font-size:var(--fs-2);font-weight:600;transition:transform var(--t-press)}
+.kia button:active{transform:scale(.96)}
 .kiv{grid-column:2;display:grid;gap:var(--sp-1);padding:var(--sp-4);border-radius:18px;background:rgba(255,255,255,.06)}
 .kiv small{font-size:var(--fs-1);color:var(--proMute)}
 .kiv small::before{content:"Vorschlag · ";color:var(--spark);font-weight:800;letter-spacing:.12em;text-transform:uppercase}

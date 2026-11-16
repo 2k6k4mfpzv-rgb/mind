@@ -63,12 +63,16 @@ const lines=s=>esc(s).replace(/\n/g,"<br>");
 // "Rückgängig" (solange der Chat offen ist). Das Wort "Vorschlag" davor setzt das CSS (.kiv small::before).
 function card(m,i){
   const p=m.vor;if(!p)return "";
-  const sub=(p.art==="neu"?[tageText(p.days),mengeText(p),dtLabel(p.daytime)]:[mengeText(p)]).filter(Boolean).join(" · ");
+  const h=p.art==="neu"?null:state.habits.find(x=>x.id===p.id); // bei "ändern" steht nur dabei, was sich ändert
+  const sub=(p.art==="neu"?[tageText(p.days),mengeText(p),dtLabel(p.daytime)]:[!h||p.days.join()!==h.days.join()?tageText(p.days):"",mengeText(p),!h||p.daytime!==h.daytime?dtLabel(p.daytime):""]).filter(Boolean).join(" · ");
   const btns=m.undo?`<div class="set"><button type="button" class="btn ghost sm" data-kun="${i}">Rückgängig</button></div>`
     :m.done?"":`<div class="set"><button type="button" class="btn sm" data-kok="${i}">Übernehmen</button><button type="button" class="btn ghost sm" data-kad="${i}">Anpassen</button></div>`;
   return `<div class="kiv"><small>${p.art==="neu"?"Neues Habit":"Statt „"+esc(p.was)+"“"}</small><b>${esc(p.name)}</b>${sub?`<span>${esc(sub)}</span>`:""}${m.done?`<em>${esc(m.done)}</em>`:""}${btns}</div>`;
 }
 const KSP=`<span class="ksp">${SPARK}</span>`; // kleines Funke-Feld links neben einer Antwort von MIND
+// Antworten zum Antippen: nur unter der letzten Antwort von MIND und nur, solange nichts unterwegs ist. Ein Tipp schickt
+// den Text so ab, als hätte man ihn selbst geschrieben. Schreiben geht daneben weiter wie immer.
+const quick=(m,i,k)=>m.opts&&m.opts.length&&i===k.msgs.length-1&&!k.busy?`<div class="kia">${m.opts.map((t,j)=>`<button type="button" data-ka="${i}:${j}">${esc(t)}</button>`).join("")}</div>`:"";
 function paint(){
   const k=ui.ki,box=$("kiB");if(!k||!box)return;
   const typed=$("kiQ")?$("kiQ").value:"",focus=document.activeElement&&document.activeElement.id==="kiQ";
@@ -80,7 +84,7 @@ function paint(){
   // Oben die Chips: im leeren Chat die zwei Einstiege (kein Einleitungstext), im laufenden Gespräch nur "Neu anfangen".
   const chips=k.msgs.length?'<button type="button" id="kiN" data-kn="1">Neu anfangen</button>':'<button type="button" data-kc="woche">Woche besprechen</button><button type="button" data-kc="neu">Neues Habit planen</button>';
   const neu=i=>i>=k.shown?" neu":""; // nur was neu dazukommt, gleitet herein
-  const msgs=k.msgs.map((m,i)=>m.role==="user"?`<div class="kb u${neu(i)}">${lines(m.text)}</div>`:`<div class="kb a${neu(i)}"><span class="kt">${lines(m.text)}</span>${KSP}${card(m,i)}</div>`).join("");
+  const msgs=k.msgs.map((m,i)=>m.role==="user"?`<div class="kb u${neu(i)}">${lines(m.text)}</div>`:`<div class="kb a${neu(i)}"><span class="kt">${lines(m.text)}</span>${KSP}${card(m,i)}${quick(m,i,k)}</div>`).join("");
   const wait=k.busy?`<div class="kb a kw neu" role="status" aria-label="MIND denkt nach"><span class="kt kdots"><i></i><i></i><i></i></span>${KSP}</div>`:"";
   box.innerHTML=`<div class="kic">${chips}</div><div class="kim" id="kiM" role="log" aria-live="polite" aria-label="Gespräch mit MIND">${msgs}${wait}</div>${note?`<p class="note kin" role="status">${esc(note)}</p>`:""}<form class="kif" id="kiF"><input id="kiQ" maxlength="1000" placeholder="Schreib MIND …" autocomplete="off" enterkeyhint="send" aria-label="Nachricht an MIND"><button class="btn" aria-label="Senden"${k.busy?" disabled":""}>${SEND}</button></form>`;
   k.shown=k.msgs.length;
@@ -107,7 +111,7 @@ async function send(text){
   const r=await data.ki({kind:k.kind,ctx:s.text,msgs:k.msgs.map(m=>({role:m.role,content:m.text+(m.vor?`\n[Vorschlag: ${m.vor.name}]`:"")}))});
   if(ui.ki!==k)return; // inzwischen "Neu anfangen" oder abgemeldet
   k.busy=false;
-  if(r&&typeof r.text==="string"&&r.text)k.msgs.push({role:"assistant",text:r.text,vor:proposal(r.vorschlag,s.ids,state.habits)});
+  if(r&&typeof r.text==="string"&&r.text)k.msgs.push({role:"assistant",text:r.text,vor:proposal(r.vorschlag,s.ids,state.habits),opts:Array.isArray(r.antworten)?r.antworten.filter(t=>typeof t==="string"&&t.trim()).slice(0,4):[]});
   else{
     k.msgs.pop(); // die Frage kommt zurück ins Feld, nichts geht verloren
     if(r&&r.pro)k.view="pro";else k.note=NOTE[["netz","limit","setup","voll"].find(x=>r&&r[x])||"fehler"];
@@ -129,8 +133,8 @@ async function take(m){
     if(i<0)m.done="Dieses Habit gibt es nicht mehr.";
     else{ // derselbe Weg wie "Bearbeiten": alte Haken zählen weiter nach den alten Einstellungen (settings_log)
       const h=state.habits[i]; // Stand von vorher merken (nur im Speicher, keine neue Spalte), für "Rückgängig"
-      m.undo={id:h.id,was:{name:h.name,target:h.target,unit:h.unit,unit_pl:h.unit_pl,settings_log:h.settings_log}};
-      startEdit(i,true);Object.assign(ui.ed,{name:p.name,tg:p.target,un:p.unit,up:p.unit_pl});saveEdit();
+      m.undo={id:h.id,was:{name:h.name,target:h.target,unit:h.unit,unit_pl:h.unit_pl,days:h.days.slice(),daytime:h.daytime,settings_log:h.settings_log}};
+      startEdit(i,true);Object.assign(ui.ed,over(p));saveEdit();
       m.done="Übernommen.";
     }
   }
@@ -146,12 +150,14 @@ function untake(m){
   m.undo=null;m.done="";ui.ki.note="";
   render();paint();
 }
+// Der Vorschlag in der Form, die "Bearbeiten" kennt (ui/edit.js): Tageszeit ist dort ein Wort oder "zeit" plus Uhrzeit
+const over=p=>{const z=p.daytime.includes(":");return {name:p.name,tg:p.target,un:p.unit,up:p.unit_pl,days:p.days.slice(),dt:z?"zeit":p.daytime,tm:z?p.daytime:""}};
 // Anpassen: das bekannte Formular öffnen, schon ausgefüllt. Das Gespräch bleibt hinter dem MIND-Knopf stehen.
 function adapt(m){
   const p=m.vor;close(true);
   if(p.art==="neu"){openSheet(p);return}
   const i=state.habits.findIndex(h=>h.id===p.id);
-  if(i>=0)openEdit(i,{name:p.name,tg:p.target,un:p.unit,up:p.unit_pl});
+  if(i>=0)openEdit(i,over(p));
 }
 
 dlg.addEventListener("click",e=>{
@@ -164,6 +170,7 @@ dlg.addEventListener("click",e=>{
   else if(ds.kok!==undefined){if(k.msgs[+ds.kok]&&!k.busy)take(k.msgs[+ds.kok])}
   else if(ds.kun!==undefined){if(k.msgs[+ds.kun])untake(k.msgs[+ds.kun])}
   else if(ds.kad!==undefined){if(k.msgs[+ds.kad])adapt(k.msgs[+ds.kad])}
+  else if(ds.ka){const [i,j]=ds.ka.split(":"),m=k.msgs[+i];if(m&&m.opts&&m.opts[+j]&&!k.busy)send(m.opts[+j])}
 });
 dlg.addEventListener("submit",e=>{e.preventDefault();const q=$("kiQ"),v=q.value;if(ui.ki&&!ui.ki.busy&&v.trim()){q.value="";send(v)}});
 
