@@ -16,7 +16,7 @@ import {run} from "./coach.js";
 // Cloudflare Workers AI (seit 12.11.2026): kostenlos bis 10.000 "Neurons" am Tag für die ganze App, die Eingaben
 // werden nicht zum Training genutzt und nicht aufbewahrt. Modell seit 16.11.2026: gpt-oss-120b (offenes Modell von
 // OpenAI, läuft bei Cloudflare). Es denkt kurz nach, bevor es antwortet, und kostet praktisch so viel wie das kleine
-// Mistral-Modell davor (rund 60 Neurons pro Nachricht, also etwa 160 Nachrichten am Tag für alle zusammen).
+// Mistral-Modell davor (gemessen rund 85 Neurons pro Nachricht, also etwa 115 Nachrichten am Tag für alle zusammen).
 // Gemessen an 14 Testgesprächen: Mistral nannte falsche Zahlen, dieses nicht. Zurück geht es mit einer Zeile:
 // model:"@cf/mistralai/mistral-small-3.1-24b-instruct".
 // Mistral direkt (api.mistral.ai, Modell "mistral-small-latest") gibt es nur noch mit bezahltem Guthaben. Das ist
