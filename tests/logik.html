@@ -668,14 +668,14 @@ async function run(){
       db:{take:async a=>{log.push(["take",a]);return o.take||{ok:true,id:7}},back:async id=>{log.push(["back",id])}},
       ask:async p=>{log.push(["ask",p.model,p.messages.length]);if(o.err)throw o.err;return "raw" in o?o.raw:'{"text":"Hi","vorschlag":null}'}},o.x||{}));
     return [res,log]};
-  await ta("Normaler Ablauf: erst zählen (20 am Tag), dann den Anbieter fragen, dann die Antwort",()=>kiLauf(),[{text:"Hi",vorschlag:null},[["take",{kind:"woche",first:true,limit:20,pro:false}],["ask","m",2]]]);
+  await ta("Normaler Ablauf: erst zählen (50 am Tag), dann den Anbieter fragen, dann die Antwort",()=>kiLauf(),[{text:"Hi",vorschlag:null},[["take",{kind:"woche",first:true,limit:50,pro:false}],["ask","m",2]]]);
   await ta("Schlüssel des Anbieters fehlt: Hinweis, und es wird nichts gezählt",()=>kiLauf({x:{key:false}}),[{setup:true},[]]);
   await ta("Unbrauchbare Anfrage: abgelehnt, nichts gezählt, der Anbieter wird nicht gefragt",()=>kiLauf({x:{body:{msgs:"x"}}}),[{fehler:"eingabe"},[]]);
   await ta("Tageslimit erreicht: Der Anbieter wird nicht gefragt (kostet nichts)",async()=>{const [r,l]=await kiLauf({take:{ok:false,why:"limit"}});return [r,l.length]},[{limit:true},1]);
   await ta("Pro ist noch nicht eingeführt: Auch ohne Pro ist alles frei",async()=>(await kiLauf({x:{plan:"free",proOn:false,body:{kind:"mini",msgs:[{role:"user",content:"x"}]}}}))[1][0][1].pro,false);
   await ta("Pro eingeführt, ohne Pro: Die Datenbank bekommt die Pro-Regel, bei Nein kommt die Pro-Seite statt einer Antwort",async()=>{const [r,l]=await kiLauf({x:{proOn:true},take:{ok:false,why:"pro"}});return [r,l[0][1].pro,l.length]},[{pro:true},true,1]);
   await ta("Pro eingeführt, mit Pro (plan = premium): keine Pro-Regel, 100 Nachrichten am Tag",async()=>{const l=(await kiLauf({x:{proOn:true,plan:"premium"}}))[1];return [l[0][1].pro,l[0][1].limit]},[false,100]);
-  await ta("Anbieter antwortet nicht: Fehler, und die Zählung wird zurückgenommen",async()=>kiLauf({err:new Error("Anbieter 500")}),[{fehler:"anbieter"},[["take",{kind:"woche",first:true,limit:20,pro:false}],["ask","m",2],["back",7]]]);
+  await ta("Anbieter antwortet nicht: Fehler, und die Zählung wird zurückgenommen",async()=>kiLauf({err:new Error("Anbieter 500")}),[{fehler:"anbieter"},[["take",{kind:"woche",first:true,limit:50,pro:false}],["ask","m",2],["back",7]]]);
   await ta("Anbieter überlastet (429): „viel los“ statt Fehler, Zählung zurück",async()=>{const [r,l]=await kiLauf({err:Object.assign(new Error("429"),{busy:true})});return [r,l[2]]},[{voll:true},["back",7]]);
   await ta("Leere Antwort vom Anbieter: Fehler, Zählung zurück",async()=>{const [r,l]=await kiLauf({raw:""});return [r,l[2]]},[{fehler:"anbieter"},["back",7]]);
 

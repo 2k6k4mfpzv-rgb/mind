@@ -7,7 +7,8 @@
 // Themen: frei = Chat über den MIND-Knopf, die anderen kommen von den Einstiegen in der App
 export const KINDS=["frei","woche","neu","mini","muster","formulieren"];
 // Limit pro Nutzer: so viele Nachrichten am Tag. Die Datenbank zählt (ki_take in docs/2026-11-12_ki.sql).
-export const LIMIT={free:20,premium:100};
+// Seit 16.11.2026 50 statt 20: Paul stieß beim Testen an die Grenze. Das freie Kontingent bei Cloudflare reicht für rund 115 am Tag.
+export const LIMIT={free:50,premium:100};
 const MAX_MSGS=16,MAX_TEXT=1500,MAX_CTX=8000,MAX_OUT=1800; // Grenzen, damit eine Anfrage nie teuer werden kann
 
 // --- 1. Anfrage prüfen ---
