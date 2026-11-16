@@ -56,6 +56,7 @@ export const touch=()=>{gen++;keep()};
 // Der zuletzt bekannte Stand (Habits mit Haken, Profil) wird kurz nach jeder Änderung auf dem Gerät abgelegt.
 // So zeigt die App beim Start sofort etwas, auch ohne Netz. Beim Abmelden wird alles gelöscht (clear).
 let known=false,keepT=0; // known = es gibt einen Stand, der gemerkt werden darf (geladen oder vom Gerät geholt)
+export const loaded=()=>known; // für die Ansichten: Bis ein Stand da ist, steht dort nichts (auch nicht "Noch keine Habits")
 function keep(){
   if(!known)return;
   clearTimeout(keepT);keepT=setTimeout(()=>store.set("snap",{habits:state.habits,prof:state.prof}),300);

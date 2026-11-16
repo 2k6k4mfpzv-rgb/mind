@@ -334,6 +334,30 @@ async function run(){
   await ta("Die Kachel zeigt die Einheit (Testdaten: Wasser in Gläsern)",async()=>{
     const [i,h]=at(h=>h.unit==="Glas");await D.setCount(h,TJ,3);R.render();const a=tile(i).querySelector("small").textContent;
     await D.setCount(h,TJ,5);R.render();return [a.split(" · ")[0],tile(i).querySelector("small").textContent.split(" · ")[0]]},["noch 3 Gläser","noch 1 Glas"]);
+  await ta("Welle nur auf der halb vollen Kachel: leer und voll stehen still. Unter dem Namen steht genau eine Angabe",async()=>{
+    const [i,h]=at(h=>h.unit==="Glas"),teil=tile(i).classList.contains("part"),eine=!tile(i).querySelector("small").textContent.includes(" · "),welle=!!tile(i).querySelector(".fill .wv");
+    await D.setCount(h,TJ,h.target);R.render();const voll=tile(i).classList.contains("part");
+    await D.setCount(h,TJ,0);R.render();const leer=tile(i).classList.contains("part");
+    await D.setCount(h,TJ,5);R.render();return [teil,eine,welle,voll,leer]},[true,true,true,false,false]);
+  await ta("Antippen: Die Kachel schwappt kurz (.slosh) und beruhigt sich wieder",async()=>{
+    const [i,h]=at(h=>h.unit==="Glas");await D.setCount(h,TJ,2);R.render();tile(i).click();const a=[tile(i).classList.contains("slosh"),tile(i).classList.contains("part"),L.cnt(h,TJ)];
+    await sleep(1100);const r=[a,tile(i).classList.contains("slosh")];await D.setCount(h,TJ,5);R.render();return r},[[true,true,3],false]);
+  await ta("Schnell hintereinander (voll, gleich danach leer): Die Welle ist sofort weg und wird nicht höher, die Oberfläche kippt nicht mehr",async()=>{
+    const [i,h]=at(h=>h.unit==="Glas");await D.setCount(h,TJ,h.target-1);R.render();
+    tile(i).click();await sleep(300);tile(i).click();await sleep(60);
+    const wv=tile(i).querySelector(".wv"),f=tile(i).querySelector(".fill"),cs=W.getComputedStyle(wv);
+    const r=[L.cnt(h,TJ),cs.opacity,cs.scale==="none"||cs.scale==="1"||cs.scale==="1 1",!!tile(i).querySelector(".cnt")&&W.getComputedStyle(tile(i).querySelector(".cnt")).animationName];
+    await sleep(300);r.push(Math.abs(parseFloat(W.getComputedStyle(f).rotate)||0)); // die Oberfläche steht wieder gerade
+    await sleep(400);await D.setCount(h,TJ,5);R.render();return r},[0,"0",true,"none",0]);
+  await ta("Zurück auf 0: Die Füllung sinkt glatt weg, unten bleibt kein Rest stehen (keine Welle, kein Kippen)",async()=>{
+    const [i,h]=at(h=>h.target===1&&sched(h,S.today)),war=L.cnt(h,TJ);await D.setCount(h,TJ,1);R.render();
+    tile(i).click();await sleep(300);const wv=tile(i).querySelector(".wv");
+    const r=[L.cnt(h,TJ),tile(i).classList.contains("slosh"),W.getComputedStyle(wv).opacity,W.getComputedStyle(tile(i).querySelector(".fill")).animationName,W.matchMedia("(prefers-reduced-motion:reduce)").matches||W.getComputedStyle(tile(i).querySelector(".fill")).transitionTimingFunction.startsWith("cubic-bezier(0.4, 0, 1, 1)")];await quiet();await D.setCount(h,TJ,war);R.render();return r},[0,true,"0","none",true]);
+  await ta("Leere Kachel: Die Füllung liegt ganz unter der Unterkante und wird nicht gezeichnet (am iPhone blieb dort ein feiner Strich)",async()=>{
+    await sleep(400); // so lange läuft eine Kachel höchstens ab
+    const alle=[...tile(0).parentNode.querySelectorAll(".tile[data-t]")],sicht=b=>W.getComputedStyle(b.querySelector(".fill")).visibility,
+      leer=alle.filter(b=>!b.classList.contains("part")&&b.getAttribute("aria-pressed")!=="true"),teil=alle.find(b=>b.classList.contains("part")),voll=alle.find(b=>b.getAttribute("aria-pressed")==="true");
+    return [leer.length>0,leer.every(b=>sicht(b)==="hidden"),leer.every(b=>b.querySelector(".fill").getBoundingClientRect().top>=b.getBoundingClientRect().bottom+2),teil?sicht(teil):"visible",voll?sicht(voll):"visible"]},[true,true,true,"visible","visible"]);
   await ta("Neues Habit mit Einheit anlegen",async()=>{
     type("inp","Liegestütze");$("atg").value=3;$("aun").value="Satz";$("aup").value="Sätze";
     $("form").dispatchEvent(new W.Event("submit",{bubbles:true,cancelable:true}));await quiet();
@@ -357,9 +381,15 @@ async function run(){
   t("Freie Themes sind Knöpfe, noch nicht freie zeigen nur den Weg (kein Knopf, kein Schloss)",()=>
     [[...doc.querySelectorAll("#ths button.th")].map(b=>b.dataset.th),[...doc.querySelectorAll("#ths div.th small")].map(x=>x.textContent)],
     [[""].concat(free),[`noch ${150-N} Tage`,`noch ${250-N} Tage`]]);
+  t("Alle Theme-Karten fangen oben an: Die Vorschau sitzt überall gleich hoch, auch wenn die Karte daneben höher ist (ein freies Theme neben einem mit Balken)",()=>{
+    const v=$("v-sammlung"),war=v.hidden;v.hidden=false;
+    const k=[...doc.querySelectorAll("#ths .th")],ab=k.map(c=>Math.round(c.querySelector(".tp").getBoundingClientRect().top-c.getBoundingClientRect().top)),hoch=k.map(c=>Math.round(c.getBoundingClientRect().height));
+    v.hidden=war;return [k.length,hoch[0]>0,new Set(ab).size,new Set(hoch).size>1]},[7,true,1,true]);
   await ta("Theme antippen: sofort angewendet, im Profil gespeichert, auf dem Gerät gemerkt",async()=>{
     doc.querySelector('#ths [data-th="wald"]').click();const sofort=root().dataset.theme;await quiet();
     return [sofort,prof().theme,localStorage.getItem("mind-theme"),doc.querySelector('#ths [data-th="wald"]').getAttribute("aria-checked"),W.getComputedStyle(root()).getPropertyValue("--acc").trim()!==""]},["wald","wald","wald","true",true]);
+  const farbe=k=>W.getComputedStyle(root()).getPropertyValue(k).trim().toUpperCase();
+  t("Das Theme färbt auch die KI: Funke und Pro-Fläche kommen vom Theme „Wald“",()=>[farbe("--spark"),farbe("--pro"),farbe("--sparkOn")],["#7CC08A","#161D18","#111712"]);
   await ta("Kein Netz beim Wechseln: Das alte Theme kommt zurück",async()=>{
     net(false);doc.querySelector('#ths [data-th="nebel"]').click();const sofort=root().dataset.theme;await quiet();net(true);
     return [sofort,root().dataset.theme,prof().theme]},["nebel","wald","wald"]);
@@ -369,6 +399,7 @@ async function run(){
   t("Man verliert nie etwas: Ohne Haken bleiben die Tage und das Theme",()=>{
     const keep=S.state.habits;S.state.habits=[];R.render();const r=[L.daysTotal(H()),+$("smN").textContent===N,root().dataset.theme];S.state.habits=keep;R.render();return r},[0,true,"wald"]);
   await ta("Zurück zum Standard",async()=>{doc.querySelector('#ths [data-th=""]').click();await quiet();return [root().dataset.theme,prof().theme,localStorage.getItem("mind-theme")]},[undefined,"",null]);
+  t("Im Standard „Puls“: Funke in Koralle auf der dunklen Pro-Fläche, das Zeichen auf dem MIND-Knopf ist dunkel (lesbar auf Koralle)",()=>[farbe("--spark"),farbe("--pro"),farbe("--sparkOn")],["#FF7A59","#1B1A21","#1B1A21"]);
   await ta("Backup und Wiederherstellen behalten Einheit und Pausen",async()=>{
     await sleep(1600);
     $("data").value=JSON.stringify({habits:[{name:"Mit Einheit",days:ALL,created:day(-10),target:2,unit:"Glas",unit_pl:"Gläser",paused:[{from:day(-3),to:day(-2)}],done:{[day(-1)]:2}}]});
@@ -645,10 +676,36 @@ async function run(){
   const bub=()=>[...doc().querySelectorAll("#kiM .kb:not(.kw)")].map(b=>(b.classList.contains("u")?"ich: ":"mind: ")+b.firstChild.textContent);
   const say=async s=>{$("kiQ").value=s;$("kiF").requestSubmit();await quiet()},note=()=>(doc().querySelector("#ki .kin")||{textContent:""}).textContent;
   const kclick=async sel=>{doc().querySelector(sel).click();await quiet()};
-  await ta("Tab-Leiste: Heute, Verlauf, MIND, Sammlung, Ich. Der MIND-Knopf öffnet den Chat und wechselt den Bereich nicht",async()=>{
-    doc().querySelector('#tabs [data-ki]').click();await sleep(50);
-    return [[...doc().querySelectorAll("#tabs button")].map(b=>b.textContent.trim()),kd().open,$("v-heute").hidden,doc().querySelector('#tabs [aria-current]').textContent.trim()]},[["Heute","Verlauf","MIND","Sammlung","Ich"],true,false,"Heute"]);
-  await ta("Die KI schreibt nie zuerst: Nach dem Öffnen steht nur der Hinweis da, es ging keine Anfrage raus",async()=>[bub(),reqs().length,[...doc().querySelectorAll("#ki .kic button")].map(b=>b.textContent),$("kiN").hidden],[[],0,["Woche besprechen","Neues Habit planen"],true]);
+  const wisch=el=>{const e=new W.Event("touchmove",{bubbles:true,cancelable:true});el.dispatchEvent(e);return e.defaultPrevented}; // true = der Browser darf dafür nicht scrollen
+  await ta("Kein Blatt offen: Scrollen bleibt unberührt (die Sperre hängt nur, solange ein Blatt offen ist)",async()=>[!!doc().querySelector("dialog.sheet[open]"),wisch(doc().body),wisch($("tiles"))],[false,false,false]);
+  await ta("Tab-Leiste: vier Bereiche in der Glas-Leiste. Die Kapsel liegt genau hinter dem aktiven Tab und wandert beim Wechseln mit",async()=>{
+    const bar=$("tbar"),on=()=>doc().querySelector("#tbar [aria-current]"),
+      passt=()=>{const b=on();return b.offsetWidth>0&&bar.style.getPropertyValue("--x")===b.offsetLeft+"px"&&bar.style.getPropertyValue("--w")===b.offsetWidth+"px"};
+    await sleep(60);const r=[passt()]; // schon beim Start, ohne dass jemand getippt hat
+    doc().querySelector('#tbar [data-tab="ich"]').click();await sleep(30);r.push(on().textContent.trim(),passt(),$("v-ich").hidden,bar.classList.contains("glide"));
+    doc().querySelector('#tbar [data-tab="verlauf"]').click();await sleep(30);r.push(on().textContent.trim(),passt());
+    doc().querySelector('#tbar [data-tab="heute"]').click();await sleep(30);
+    const br=[...doc().querySelectorAll("#tbar button")],sa=br[2],tx=doc().createRange();tx.selectNodeContents(sa.lastChild);
+    return r.concat([on().textContent.trim(),passt(),$("v-heute").hidden,br.map(b=>b.textContent.trim()),
+      tx.getBoundingClientRect().width+32<=sa.getBoundingClientRect().width, // „Sammlung“ hat links und rechts mindestens 16 Pixel Luft in seiner Kapsel
+      sa.querySelector("svg").getBoundingClientRect().top-sa.getBoundingClientRect().top>=7,sa.getBoundingClientRect().bottom-tx.getBoundingClientRect().bottom>=7])}, // und oben und unten mindestens 7
+    [true,"Ich",true,false,true,"Verlauf",true,"Heute",true,false,["Heute","Verlauf","Sammlung","Ich"],true,true,true]);
+  await ta("Kapsel bei „Ich“ (kürzester Name): nie schmaler als hoch und am Ende der Leiste rundum gleich weit vom Rand",async()=>{
+    doc().querySelector('#tbar [data-tab="ich"]').click();await sleep(500);
+    const k=doc().querySelector("#tbar .ind").getBoundingClientRect(),b=$("tbar").getBoundingClientRect(),schmal=W.innerWidth<360;
+    const r=[schmal||k.width>=k.height-.5,schmal||Math.abs((b.right-k.right)-(k.top-b.top))<=1];
+    doc().querySelector('#tbar [data-tab="heute"]').click();await sleep(30);return r},[true,true]);
+  await ta("MIND ist kein Bereich: eigener runder Knopf neben der Leiste, mit Namen für Vorleser. Er öffnet den Chat und wechselt den Bereich nicht",async()=>{
+    const m=doc().querySelector('#tabs [data-ki]'),cs=W.getComputedStyle(m);
+    m.click();await sleep(50);
+    return [!!m.closest("#tbar"),m.parentNode.id,m===$("tabs").lastElementChild,m.getAttribute("aria-label"),cs.borderRadius,cs.width,kd().open,$("v-heute").hidden,doc().querySelector('#tabs [aria-current]').textContent.trim()]},[false,"tabs",true,"MIND","50%","64px",true,false,"Heute"]);
+  await ta("Die KI schreibt nie zuerst: Der leere Chat zeigt nur die zwei Einstiege (kein Einleitungstext), es ging keine Anfrage raus",async()=>[bub(),reqs().length,[...doc().querySelectorAll("#ki .kic button")].map(b=>b.textContent),!$("kiN"),$("kiM").textContent],[[],0,["Woche besprechen","Neues Habit planen"],true,""]);
+  await ta("Blatt öffnen: Der Fokus liegt auf dem Blatt, nicht auf „Schließen“ (kein Rahmen um den Knopf), oben steht nur das X",async()=>
+    [doc().activeElement.id,doc().querySelector("#ki [data-kx]").getAttribute("aria-label"),doc().querySelector("#ki [data-kx]").textContent.trim(),doc().querySelector("#ki .shh").querySelectorAll("button").length],["kiI","Schließen","",1]);
+  await ta("Blatt offen: Ein Wisch scrollt nie die Seite dahinter (kurzer Chat, Eingabefeld, dunkler Hintergrund). Ein langer Chat scrollt selbst weiter",async()=>{
+    const m=$("kiM"),lang=doc().createElement("p");lang.style.cssText="height:900px;flex:none";
+    const r=[kd().scrollHeight<=kd().clientHeight+1,wisch(doc().querySelector("#ki .kic")),wisch($("kiQ")),wisch(kd()),wisch(doc().body)];
+    m.appendChild(lang);r.push(m.scrollHeight>m.clientHeight+1,wisch(lang));lang.remove();return r},[true,true,true,true,true,true,false]);
   await ta("„Woche besprechen“: Die Frage geht raus, die KI antwortet erst mit einer Rückfrage (noch kein Vorschlag)",async()=>{
     await kclick('#ki [data-kc="woche"]');const b=reqs()[0].p;
     return [bub().length,bub()[0],/^mind: Wasser lief richtig gut/.test(bub()[1]),doc().querySelectorAll("#ki .kiv").length,b.kind,b.msgs.length,/^Heute: .*\nZeichen: /.test(b.ctx)]},[2,"ich: Lass uns meine Woche besprechen.",true,0,"woche",1,true]);
@@ -657,12 +714,24 @@ async function run(){
     await say("Abends bin ich zu müde.");const c=doc().querySelector("#ki .kiv");
     return [reqs()[1].p.msgs.map(m=>m.role),bub().length,c.querySelector("small").textContent,c.querySelector("b").textContent,[...c.querySelectorAll("button")].map(b=>b.textContent),$("kiQ").value]},[["user","assistant","user"],4,"Statt „10 Seiten lesen“","2 Seiten lesen",["Übernehmen","Anpassen"],""]);
   await ta("Nichts ändert sich von selbst: Vor dem Tipp heißt das Habit wie vorher",async()=>[H()[2].name,MOCK().habits[2].name],["10 Seiten lesen","10 Seiten lesen"]);
-  await ta("„Übernehmen“ ändert das Habit (auch in der Datenbank), die Karte zeigt es, die Knöpfe sind weg",async()=>{
+  const snap=h=>[h.name,h.target,h.unit,h.unit_pl,JSON.stringify(h.settings_log)],vor=snap(H()[2]),kbtn=()=>[...doc().querySelectorAll("#ki .kiv button")].map(b=>b.textContent);
+  await ta("„Übernehmen“ ändert das Habit (auch in der Datenbank), die Karte zeigt es, aus den zwei Knöpfen wird „Rückgängig“",async()=>{
     await kclick("#ki [data-kok]");const c=doc().querySelector("#ki .kiv");
-    return [H()[2].name,MOCK().habits[2].name,c.querySelector("em").textContent,c.querySelectorAll("button").length,S.ui.ed]},["2 Seiten lesen","2 Seiten lesen","Übernommen.",0,null]);
-  await ta("Schließen und wieder öffnen: Das Gespräch steht noch da. „Neu anfangen“ leert es",async()=>{
-    await kclick("#ki [data-kx]");const zu=kd().open;doc().querySelector('#tabs [data-ki]').click();await sleep(50);const n=bub().length;
-    await kclick("#ki [data-kn]");return [zu,n,bub().length,doc().querySelectorAll("#ki .kic button").length]},[false,4,0,2]);
+    return [H()[2].name,MOCK().habits[2].name,c.querySelector("em").textContent,kbtn(),S.ui.ed]},["2 Seiten lesen","2 Seiten lesen","Übernommen.",["Rückgängig"],null]);
+  await ta("„Rückgängig“ ohne Netz: ruhiger Hinweis, nichts ändert sich, der Knopf bleibt",async()=>{
+    D.offline();await sleep(50);await kclick("#ki [data-kun]");const r=[note(),H()[2].name,kbtn(),$("err").textContent];await online();await sleep(50);return r},
+    ["MIND braucht dafür Netz. Sobald du wieder online bist, geht es weiter.","2 Seiten lesen",["Rückgängig"],""]);
+  await ta("„Rückgängig“: Das Habit ist wieder genau wie vorher (Name, Ziel, Einheit, frühere Einstellungen), auch in der Datenbank. Die Karte bietet den Vorschlag wieder an",async()=>{
+    await kclick("#ki [data-kun]");const c=doc().querySelector("#ki .kiv"),m=MOCK().habits[2];
+    return [snap(H()[2]),[m.name,m.target,m.unit,m.unit_pl,JSON.stringify(m.settings_log)],kbtn(),!!c.querySelector("em"),$("err").textContent]},[vor,vor,["Übernehmen","Anpassen"],false,""]);
+  await ta("Danach geht „Übernehmen“ wieder",async()=>{await kclick("#ki [data-kok]");return [H()[2].name,MOCK().habits[2].name,kbtn()]},["2 Seiten lesen","2 Seiten lesen",["Rückgängig"]]);
+  // Ist am Gerät "Bewegung reduzieren" eingestellt, schließt das Blatt sofort (ohne Hinausgleiten). Beides ist richtig.
+  const ruhig=W.matchMedia("(prefers-reduced-motion:reduce)").matches;
+  await ta("Schließen: Das Blatt gleitet erst hinaus und ist dann zu"+(ruhig?" (hier sofort: am Gerät ist „Bewegung reduzieren“ an)":""),async()=>{
+    doc().querySelector("#ki [data-kx]").click();const mitten=[kd().open,kd().classList.contains("out")];await quiet();return [mitten,kd().open,kd().classList.contains("out")]},[ruhig?[false,false]:[true,true],false,false]);
+  await ta("Wieder öffnen: Das Gespräch steht noch da. Nach dem Schließen ist es übernommen (kein „Rückgängig“ mehr). „Neu anfangen“ leert es",async()=>{
+    doc().querySelector('#tabs [data-ki]').click();await sleep(50);const n=bub().length,k=kbtn(),em=doc().querySelector("#ki .kiv em").textContent,name=H()[2].name;
+    await kclick("#ki [data-kn]");return [n,k,em,name,bub().length,doc().querySelectorAll("#ki .kic button").length]},[4,[],"Übernommen.","2 Seiten lesen",0,2]);
   await ta("„Mini-Version vorschlagen“ im Blatt der Kachel: Blatt macht Platz, die KI kennt das Habit und schlägt direkt vor",async()=>{
     await kclick("#ki [data-kx]");M.openMenu(0);const row=doc().querySelector('#menu [data-ki="mini"]'),pro=!!row.querySelector(".pro");row.click();await quiet();
     const b=reqs()[reqs().length-1].p,c=doc().querySelector("#ki .kiv");
@@ -684,6 +753,9 @@ async function run(){
   await ta("„Übernehmen“ legt das neue Habit an: Tage, Tageszeit und Einheit stimmen, es steht am Ende der Liste",async()=>{
     const n=H().length;await kclick("#ki [data-kok]");const h=H()[H().length-1],m=MOCK().habits[MOCK().habits.length-1];
     return [H().length-n,h.name,h.days,h.daytime,h.unit,h.target,h.created===S.TI,m.name,h.pos>H()[n-1].pos,doc().querySelector("#ki .kiv em").textContent]},[1,"10 Minuten spazieren",[0,1,2,3,4],"abend","10 Minuten",1,true,"10 Minuten spazieren",true,"Angelegt. Du findest es unter „Heute“."]);
+  await ta("„Rückgängig“ bei einem neu angelegten Habit: Es ist wieder weg (auch in der Datenbank), der Vorschlag steht wieder da",async()=>{
+    const n=H().length,m=MOCK().habits.length;await kclick("#ki [data-kun]");
+    return [H().length-n,MOCK().habits.length-m,H().some(h=>h.name==="10 Minuten spazieren"),kbtn()]},[-1,-1,false,["Übernehmen","Anpassen"]]);
   await ta("„Neues Habit planen“: erst eine Frage, nach der Antwort der Vorschlag. „Anpassen“ öffnet „Neues Habit“ ausgefüllt, angelegt ist noch nichts",async()=>{
     await kclick("#ki [data-kn]");await kclick('#ki [data-kc="neu"]');const frage=doc().querySelectorAll("#ki .kiv").length,n=H().length;
     await say("Abends eine Runde gehen.");await kclick("#ki [data-kad]");

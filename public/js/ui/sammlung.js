@@ -44,13 +44,13 @@ export function renderSammlung(){
   $("ths").innerHTML=[["","Puls",0]].concat(THEMES).map(([k,name,d])=>{
     if(n<d)return `<div class="th">${preview(k)}<span class="thn"><b>${name}</b><small>noch ${d-n} ${plural(d-n)}</small>${bar(n,d)}</span></div>`;
     const on=k===cur;
-    return `<button class="th" role="radio" aria-checked="${on}" data-th="${k}">${preview(k)}<span class="thn"><b>${name}</b><small>${on?"Aktiv":neu.includes(k)?"Neu freigeschaltet":k?"Freigeschaltet":"Standard"}</small></span>${on?`<span class="tho">${CHECK}</span>`:""}</button>`;
+    return `<button class="th" role="radio" aria-checked="${on}" data-th="${k}">${preview(k)}<span class="thn"><b>${name}</b>${!on&&neu.includes(k)?"<small>Neu freigeschaltet</small>":""}</span>${on?`<span class="tho">${CHECK}</span>`:""}</button>`;
   }).join("");
   // Karte im Verlauf: ein neu freigeschaltetes Theme, sonst der Weg zum nächsten. Sind alle frei und gesehen, verschwindet sie.
   const f=fresh(n).pop(),c=$("thc");
   c.hidden=!f&&!next;
-  if(f)c.innerHTML=`<span class="thcT"><span class="cap">Sammlung</span><b>Theme „${f[1]}“ ist frei</b><small>Tippen, um es in der Sammlung anzusehen</small></span>${preview(f[0])}`;
-  else if(next)c.innerHTML=`<span class="thcT"><span class="cap">Sammlung</span><b>Theme „${next[1]}“</b><small>${n} von ${next[2]} Tagen · zählt insgesamt, nicht am Stück</small>${bar(n,next[2])}</span>${preview(next[0])}`;
+  if(f)c.innerHTML=`<span class="thcT"><span class="cap">Sammlung</span><b>Theme „${f[1]}“ ist frei</b></span>${preview(f[0])}`;
+  else if(next)c.innerHTML=`<span class="thcT"><span class="cap">Sammlung</span><b>Theme „${next[1]}“</b><small>${n} von ${next[2]} Tagen</small>${bar(n,next[2])}</span>${preview(next[0])}`;
 }
 onRender(renderSammlung);
 

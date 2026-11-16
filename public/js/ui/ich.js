@@ -22,20 +22,23 @@ const updProf=(o,quiet)=>data.updateProfile(o).then(done=>{if(done&&!quiet)flash
 // --- Erinnerung als Push ---
 // An/aus und Uhrzeit stehen im Profil und gelten für alle Geräte. Der Server schickt die Nachricht (höchstens eine am
 // Tag, nur wenn noch etwas offen ist). Jedes Gerät entscheidet selbst, ob es sie bekommt: Zeile "Dieses Gerät".
-const DEV={ // Zustand des Geräts (pushMode in logic.js) -> [Text, Knopf]
-  on:["Bekommt die Erinnerung","Ausschalten"],
-  off:["Bekommt die Erinnerung noch nicht","Einschalten"],
-  blocked:["Benachrichtigungen sind für MIND gesperrt. Erlaube sie in den Einstellungen deines Geräts, dann geht es hier weiter.",""],
-  home:["Auf dem iPhone geht das nur als App: in Safari auf „Teilen“ tippen, dann „Zum Home-Bildschirm“. Danach MIND von dort öffnen und hier einschalten.",""],
-  none:["Dieser Browser kann keine Push-Nachrichten empfangen.",""],
-  server:["Push ist auf dem Server noch nicht eingerichtet.","Einschalten"],
-  error:["Das hat nicht geklappt. Versuch es später nochmal.","Einschalten"]
+// In der Zeile steht rechts der Knopf oder, wenn es nichts zu tun gibt, ein kurzes Wort. Der Text erscheint nur,
+// wenn man etwas wissen oder tun muss (bei "an" und "aus" sagt der Knopf schon alles).
+const DEV={ // Zustand des Geräts (pushMode in logic.js) -> [Text, Knopf, kurzes Wort rechts]
+  on:["Bekommt die Erinnerung","Ausschalten",""],
+  off:["Bekommt die Erinnerung noch nicht","Einschalten",""],
+  blocked:["Benachrichtigungen sind für MIND gesperrt. Erlaube sie in den Einstellungen deines Geräts, dann geht es hier weiter.","","Gesperrt"],
+  home:["Auf dem iPhone geht das nur als App: in Safari auf „Teilen“ tippen, dann „Zum Home-Bildschirm“. Danach MIND von dort öffnen und hier einschalten.","","Nur als App"],
+  none:["Dieser Browser kann keine Push-Nachrichten empfangen.","","Geht hier nicht"],
+  server:["Push ist auf dem Server noch nicht eingerichtet.","Einschalten",""],
+  error:["Das hat nicht geklappt. Versuch es später nochmal.","Einschalten",""]
 };
 let dev="none";
 export function devUi(mode){
-  dev=mode;const [text,btn]=DEV[mode];
+  dev=mode;const [text,btn,word]=DEV[mode];
   $("remDev").hidden=!rem.on;$("remTime").disabled=!rem.on;
-  $("remNote").textContent=text;$("remBtn").textContent=btn;$("remBtn").hidden=!btn;
+  $("remNote").textContent=text;$("remNote").hidden=!rem.on||mode==="on"||mode==="off";
+  $("remVal").textContent=word;$("remBtn").textContent=btn;$("remBtn").hidden=!btn;
 }
 const devNow=async()=>devUi(await pwa.pushState());
 // fail = Grund, warum das Einschalten nicht geklappt hat (leer = hat geklappt)
@@ -81,7 +84,7 @@ const dump=()=>JSON.stringify({habits:state.habits,rem:{on:rem.on,time:rem.time}
 $("copy").onclick=async()=>{
   const v=dump();
   try{await navigator.clipboard.writeText(v)}catch(e){const t=$("data");t.closest("details").open=true;t.value=v;t.select();try{document.execCommand("copy")}catch(_){}}
-  $("copy").textContent="Kopiert";setTimeout(()=>$("copy").textContent="Daten kopieren",1500);
+  $("copyT").textContent="Kopiert";setTimeout(()=>$("copyT").textContent="Daten kopieren",1500);
 };
 $("imp").onclick=async()=>{
   try{
