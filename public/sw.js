@@ -7,7 +7,7 @@
 // VERSION ändert sich mit jeder Änderung an einer Datei aus FILES. Nur so merkt der Browser, dass es etwas Neues gibt.
 // Der richtige Wert ist die Prüfsumme über alle Dateien: tests/logik.html rechnet ihn aus und zeigt ihn an,
 // wenn er hier nicht stimmt. Kommt eine Datei in public/ dazu, gehört sie in die Liste (auch das prüft der Test).
-const VERSION="b0a95fc3d861";
+const VERSION="71d15097172f";
 const FILES=[
   "./","manifest.webmanifest",
   "css/tokens.css","css/base.css","css/components.css",

@@ -14,7 +14,7 @@ export const settle=d=>{if(fin.has(d))fin.get(d)()}; // ein laufendes Schließen
 export function openDlg(d){
   settle(d);
   if(d.open)return;
-  d.style.transform="";d.showModal();
+  d.style.transform="";d.showModal();lock();
   const s=d.querySelector(".shi");if(s)s.focus({preventScroll:true});
 }
 // Schließen: Das Blatt gleitet hinaus, erst dann ist es wirklich zu. now = sofort (ein anderes Blatt übernimmt).
@@ -25,6 +25,7 @@ export function shut(d,now){
   const end=()=>{
     clearTimeout(t);fin.delete(d);d.classList.remove("out");d.style.transform="";
     if(d.open)d.close();
+    if(!document.querySelector("dialog.sheet[open]"))unlock();
     d.dispatchEvent(new Event("shut"));
   };
   if(now||calm()){end();return}
@@ -54,4 +55,34 @@ export function bind(d){
   };
   d.addEventListener("pointerup",up);d.addEventListener("pointercancel",up);
   d.addEventListener("click",e=>{if(moved){moved=false;e.stopImmediatePropagation()}},true);
+}
+
+// --- Handy: Solange ein Blatt offen ist, darf ein Wisch nie die Seite dahinter scrollen. ---
+// Das passierte, wenn unter dem Finger nichts zu scrollen war (kurzer Chat, Eingabefeld, dunkler Hintergrund über dem
+// Blatt). Erlaubt bleibt der Wisch nur, wenn dort etwas liegt, das in diese Richtung wirklich scrollen kann.
+// Zwei Finger (Zoomen) bleiben unberührt. Der Regler hängt am ganzen Dokument, weil der dunkle Hintergrund nicht zum
+// Blatt gehört, und nur solange ein Blatt offen ist: Sonst müsste der Browser bei jedem normalen Scrollen erst fragen.
+let tx=0,ty=0,held=false;
+const opt={passive:false};
+const first=e=>{const t=e.touches&&e.touches[0];if(t){tx=t.clientX;ty=t.clientY}};
+function hold(e){
+  const d=document.querySelector("dialog.sheet[open]");
+  if(!d){unlock();return}
+  if(!e.cancelable||(e.touches&&e.touches.length>1))return;
+  const t=e.touches&&e.touches[0],quer=!!t&&Math.abs(t.clientX-tx)>Math.abs(t.clientY-ty);
+  if(!scrolls(e.target,d,quer))e.preventDefault();
+}
+function lock(){if(held)return;held=true;document.addEventListener("touchstart",first,{passive:true});document.addEventListener("touchmove",hold,opt)}
+function unlock(){if(!held)return;held=false;document.removeEventListener("touchstart",first);document.removeEventListener("touchmove",hold,opt)}
+// Liegt el in etwas (bis hinauf zum Blatt selbst), das in dieser Richtung gerade scrollen kann?
+// quer = der Finger bewegt sich seitwärts. In einem Eingabefeld darf man seitwärts immer (Text verschieben).
+function scrolls(el,d,quer){
+  if(!d.contains(el))return false;
+  for(let n=el;n&&n.nodeType===1;n=n.parentElement){
+    if(quer&&n.matches("input,textarea"))return true;
+    const mehr=quer?n.scrollWidth>n.clientWidth+1:n.scrollHeight>n.clientHeight+1;
+    if(mehr){const o=getComputedStyle(n);if(/auto|scroll/.test(quer?o.overflowX:o.overflowY))return true}
+    if(n===d)break;
+  }
+  return false;
 }

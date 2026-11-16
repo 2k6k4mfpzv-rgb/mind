@@ -41,6 +41,9 @@ button.hint{text-decoration:underline;text-underline-offset:3px}
 /* Leeren (zurück auf 0): Die Füllung läuft zügig ab und ist dann weg. Kein Federn über das Ziel, kein Nachlauf am
    unteren Rand (--drain wird schneller statt langsamer). */
 .tile:not(.part):not([aria-pressed="true"]) .fill,.tile:not(.part):not([aria-pressed="true"]) .tc{transition-timing-function:var(--drain);transition-duration:var(--t-drain)}
+/* Leere Kachel: Die Füllung endete rechnerisch 0,007 Pixel über der Unterkante, am iPhone war das ein feiner Strich.
+   Deshalb rutscht sie 3 Pixel tiefer und wird, sobald sie abgelaufen ist, gar nicht mehr gezeichnet. */
+.tile:not(.part):not([aria-pressed="true"]) .fill{--wo:3px;visibility:hidden;transition:transform var(--t-drain) var(--drain),visibility 0s linear var(--t-drain)}
 .wv{position:absolute;left:0;bottom:calc(100% - 1px);width:200%;height:10px;fill:var(--c);opacity:0;transform-origin:50% 100%}
 /* Die Welle gibt es nur, solange Füllung da ist: halb voll, oder gerade beim Steigen auf voll (aria-pressed="true").
    Sie erscheint weich und ist sofort weg, wenn die Kachel zurück auf 0 geht: Dann sinkt die Füllung glatt weg.

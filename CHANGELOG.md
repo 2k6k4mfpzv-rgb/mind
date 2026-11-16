@@ -14,6 +14,14 @@ Private Habit-Tracker-Website. Frontend: `public/` (Gerüst `index.html`, dazu `
 
 ## Änderungen (neueste zuerst)
 
+### 2026-11-16 – Zwei Fehler vom iPhone: feiner Strich an leeren Kacheln, Seite scrollt hinter dem Chat
+- **Warum:** Pauls Test der Vorschau am iPhone (16.11.).
+- **Strich an der Unterkante einer leeren Kachel:** Die Füllung endete rechnerisch 0,007 Pixel über der Unterkante (76,923 % von 130 % sind nicht ganz 100 %). Am Mac sieht man das nicht, das iPhone zeichnet daraus einen feinen Strich in der Farbe des Habits. Jetzt rutscht die Füllung bei einer leeren Kachel 3 Pixel tiefer und wird, sobald sie abgelaufen ist, gar nicht mehr gezeichnet (`visibility:hidden`).
+- **Seite scrollt hinter einem offenen Blatt:** War unter dem Finger nichts zu scrollen (kurzer Chat, Eingabefeld, dunkler Hintergrund über dem Blatt), wanderte der Wisch zur Seite dahinter. `overscroll-behavior` hilft nur bei Flächen, die selbst scrollen können. Jetzt hält `js/ui/dialog.js` solche Wische auf, solange ein Blatt offen ist. Ein langer Chat scrollt weiter selbst, die Chips lassen sich weiter seitwärts schieben, Zoomen mit zwei Fingern bleibt. Der Regler hängt am ganzen Dokument (der dunkle Hintergrund gehört nicht zum Blatt) und wird beim Schließen wieder abgehängt.
+- **Unverändert:** Nach unten wischen schließt ein Blatt weiter nur am Griff und an der Kopfzeile, nicht mitten im Inhalt.
+- **Tests:** `tests/logik.html` hat 207 Tests (vorher 204). Neu: leere Kachel (Füllung unter der Kante und nicht gezeichnet), Blatt offen (kein Wisch erreicht die Seite dahinter, langer Chat scrollt), kein Blatt offen (Scrollen unberührt).
+- **Teststand:** 207 von 207 grün in Chrome mit Animationen. Das Scrollen zusätzlich mit echten Touch-Gesten in Chrome nachgestellt: vorher scrollte die Seite bei Wischen auf dem dunklen Hintergrund, jetzt in keinem Fall. **Nicht geprüft:** ein echtes iPhone. Safari verhält sich beim Scrollen anders als Chrome, dort hatte Paul es auch mitten im kurzen Chat.
+
 ### 2026-11-16 – Tab-Leiste neu: schwebende Glas-Leiste mit vier Bereichen, MIND als eigener Knopf daneben
 - **Warum:** Paul wollte die untere Leiste grundlegend besser („High-End“). Nach Recherche und drei Varianten hat er sich am 16.11. für Variante B entschieden (Vault: `Habit Tracker/MIND – Tab-Leiste Redesign (Analyse und Vorlagen).md`). Das ersetzt die Leiste vom 15.11. (MIND rund und erhöht in der Mitte). Grund für B: MIND öffnet ein Blatt und ist kein Bereich, eine Tab-Leiste ist zum Navigieren da.
 - **Nur Aussehen.** Keine SQL, kein Server, `logic.js` und `config.js` unverändert.
