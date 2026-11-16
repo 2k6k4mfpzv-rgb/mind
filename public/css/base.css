@@ -8,7 +8,7 @@
 [hidden]{display:none!important}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.5 var(--font);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
-main{max-width:1060px;margin:0 auto;padding:var(--sp-6) var(--sp-5) 128px}
+main{max-width:1060px;margin:0 auto;padding:var(--sp-6) var(--sp-5) 120px}
 h1{font-size:clamp(1.9rem,7vw,2.4rem);font-weight:800;letter-spacing:-.025em;line-height:1.1;margin:0}
 h2{font-size:1.4rem;font-weight:800;letter-spacing:-.02em;line-height:1.2;margin:var(--sp-2) 0}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}

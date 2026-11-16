@@ -390,7 +390,7 @@ async function run(){
   t("Man verliert nie etwas: Ohne Haken bleiben die Tage und das Theme",()=>{
     const keep=S.state.habits;S.state.habits=[];R.render();const r=[L.daysTotal(H()),+$("smN").textContent===N,root().dataset.theme];S.state.habits=keep;R.render();return r},[0,true,"wald"]);
   await ta("Zurück zum Standard",async()=>{doc.querySelector('#ths [data-th=""]').click();await quiet();return [root().dataset.theme,prof().theme,localStorage.getItem("mind-theme")]},[undefined,"",null]);
-  t("Im Standard „Puls“ bleibt die KI wie bisher: Funke in Koralle auf der dunklen Pro-Fläche",()=>[farbe("--spark"),farbe("--pro")],["#FF7A59","#1B1A21"]);
+  t("Im Standard „Puls“: Funke in Koralle auf der dunklen Pro-Fläche, das Zeichen auf dem MIND-Knopf ist dunkel (lesbar auf Koralle)",()=>[farbe("--spark"),farbe("--pro"),farbe("--sparkOn")],["#FF7A59","#1B1A21","#1B1A21"]);
   await ta("Backup und Wiederherstellen behalten Einheit und Pausen",async()=>{
     await sleep(1600);
     $("data").value=JSON.stringify({habits:[{name:"Mit Einheit",days:ALL,created:day(-10),target:2,unit:"Glas",unit_pl:"Gläser",paused:[{from:day(-3),to:day(-2)}],done:{[day(-1)]:2}}]});
@@ -667,9 +667,21 @@ async function run(){
   const bub=()=>[...doc().querySelectorAll("#kiM .kb:not(.kw)")].map(b=>(b.classList.contains("u")?"ich: ":"mind: ")+b.firstChild.textContent);
   const say=async s=>{$("kiQ").value=s;$("kiF").requestSubmit();await quiet()},note=()=>(doc().querySelector("#ki .kin")||{textContent:""}).textContent;
   const kclick=async sel=>{doc().querySelector(sel).click();await quiet()};
-  await ta("Tab-Leiste: Heute, Verlauf, MIND, Sammlung, Ich. Der MIND-Knopf öffnet den Chat und wechselt den Bereich nicht",async()=>{
-    doc().querySelector('#tabs [data-ki]').click();await sleep(50);
-    return [[...doc().querySelectorAll("#tabs button")].map(b=>b.textContent.trim()),kd().open,$("v-heute").hidden,doc().querySelector('#tabs [aria-current]').textContent.trim(),[...doc().querySelectorAll("#tabs button")].map(b=>+!!b.querySelector(".orb")).join("")]},[["Heute","Verlauf","MIND","Sammlung","Ich"],true,false,"Heute","00100"]);
+  await ta("Tab-Leiste: vier Bereiche in der Glas-Leiste. Die Kapsel liegt genau hinter dem aktiven Tab und wandert beim Wechseln mit",async()=>{
+    const bar=$("tbar"),on=()=>doc().querySelector("#tbar [aria-current]"),
+      passt=()=>{const b=on();return b.offsetWidth>0&&bar.style.getPropertyValue("--x")===b.offsetLeft+"px"&&bar.style.getPropertyValue("--w")===b.offsetWidth+"px"};
+    await sleep(60);const r=[passt()]; // schon beim Start, ohne dass jemand getippt hat
+    doc().querySelector('#tbar [data-tab="ich"]').click();await sleep(30);r.push(on().textContent.trim(),passt(),$("v-ich").hidden,bar.classList.contains("glide"));
+    doc().querySelector('#tbar [data-tab="verlauf"]').click();await sleep(30);r.push(on().textContent.trim(),passt());
+    doc().querySelector('#tbar [data-tab="heute"]').click();await sleep(30);
+    const br=[...doc().querySelectorAll("#tbar button")],sa=br[2],tx=doc().createRange();tx.selectNodeContents(sa.lastChild);
+    return r.concat([on().textContent.trim(),passt(),$("v-heute").hidden,br.map(b=>b.textContent.trim()),
+      tx.getBoundingClientRect().width+16<=sa.getBoundingClientRect().width])}, // „Sammlung“ hat links und rechts Luft in seiner Kapsel
+    [true,"Ich",true,false,true,"Verlauf",true,"Heute",true,false,["Heute","Verlauf","Sammlung","Ich"],true]);
+  await ta("MIND ist kein Bereich: eigener runder Knopf neben der Leiste, mit Namen für Vorleser. Er öffnet den Chat und wechselt den Bereich nicht",async()=>{
+    const m=doc().querySelector('#tabs [data-ki]'),cs=W.getComputedStyle(m);
+    m.click();await sleep(50);
+    return [!!m.closest("#tbar"),m.parentNode.id,m===$("tabs").lastElementChild,m.getAttribute("aria-label"),cs.borderRadius,cs.width,kd().open,$("v-heute").hidden,doc().querySelector('#tabs [aria-current]').textContent.trim()]},[false,"tabs",true,"MIND","50%","64px",true,false,"Heute"]);
   await ta("Die KI schreibt nie zuerst: Der leere Chat zeigt nur die zwei Einstiege (kein Einleitungstext), es ging keine Anfrage raus",async()=>[bub(),reqs().length,[...doc().querySelectorAll("#ki .kic button")].map(b=>b.textContent),!$("kiN"),$("kiM").textContent],[[],0,["Woche besprechen","Neues Habit planen"],true,""]);
   await ta("Blatt öffnen: Der Fokus liegt auf dem Blatt, nicht auf „Schließen“ (kein Rahmen um den Knopf), oben steht nur das X",async()=>
     [doc().activeElement.id,doc().querySelector("#ki [data-kx]").getAttribute("aria-label"),doc().querySelector("#ki [data-kx]").textContent.trim(),doc().querySelector("#ki .shh").querySelectorAll("button").length],["kiI","Schließen","",1]);

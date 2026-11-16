@@ -141,13 +141,16 @@
 </section>
 
 <div class="undo" id="undo" aria-live="polite"></div>
+<!-- Tab-Leiste (seit 16.11.2026): vier Bereiche in einer schwebenden Glas-Leiste, die Kapsel (.ind) gleitet zum aktiven.
+     MIND ist kein Bereich, sondern der KI-Chat als Blatt von unten (js/ui/ki.js), deshalb ein eigener runder Knopf daneben. -->
 <nav class="tabs" id="tabs" aria-label="Bereiche">
+  <div class="tbar" id="tbar"><i class="ind"></i>
   <button data-tab="heute" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>Heute</button>
   <button data-tab="verlauf"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-7M12 20V5M19 20v-10"/></svg>Verlauf</button>
-  <!-- MIND-Knopf: kein Bereich, sondern der KI-Chat als Blatt von unten (js/ui/ki.js). Rund, erhöht, in der Mitte. -->
-  <button class="mind" data-ki="" aria-haspopup="dialog"><span class="orb"><svg class="sp" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3.5l1.7 5 5 1.7-5 1.7-1.7 5-1.7-5-5-1.7 5-1.7z"/><path d="M18 13.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/></svg></span>MIND</button>
   <button data-tab="sammlung"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg>Sammlung</button>
   <button data-tab="ich"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20.2c1.3-3.7 4.1-5.2 7.2-5.2s5.9 1.5 7.2 5.2"/></svg>Ich</button>
+  </div>
+  <button class="mind" data-ki="" aria-haspopup="dialog" aria-label="MIND"><svg class="sp" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3.5l1.7 5 5 1.7-5 1.7-1.7 5-1.7-5-5-1.7 5-1.7z"/><path d="M18 13.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/></svg></button>
 </nav>
 
 <datalist id="cats"></datalist>

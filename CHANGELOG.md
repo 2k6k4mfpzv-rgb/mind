@@ -14,6 +14,18 @@ Private Habit-Tracker-Website. Frontend: `public/` (Gerüst `index.html`, dazu `
 
 ## Änderungen (neueste zuerst)
 
+### 2026-11-16 – Tab-Leiste neu: schwebende Glas-Leiste mit vier Bereichen, MIND als eigener Knopf daneben
+- **Warum:** Paul wollte die untere Leiste grundlegend besser („High-End“). Nach Recherche und drei Varianten hat er sich am 16.11. für Variante B entschieden (Vault: `Habit Tracker/MIND – Tab-Leiste Redesign (Analyse und Vorlagen).md`). Das ersetzt die Leiste vom 15.11. (MIND rund und erhöht in der Mitte). Grund für B: MIND öffnet ein Blatt und ist kein Bereich, eine Tab-Leiste ist zum Navigieren da.
+- **Nur Aussehen.** Keine SQL, kein Server, `logic.js` und `config.js` unverändert.
+- **Leiste:** schwebt 12 Pixel über dem unteren Rand (am iPhone mit Home-Balken 26), 64 hoch, ganz rund, höchstens 420 breit und mittig. Glas: Kartenfarbe zu 78 %, dahinter weichgezeichnet (`blur(22px) saturate(160%)`), feiner Rand, Glanzkante oben, weicher Schatten. Ohne Weichzeichnen (alter Browser) fast deckend.
+- **Vier Bereiche** (Heute, Verlauf, Sammlung, Ich): Symbol 24, Name 12 Pixel und immer sichtbar. Nicht aktiv: Textfarbe zu 68 %. Aktiv: Akzentfarbe, Symbol leicht gefüllt, dahinter eine Kapsel (Akzent in die Kartenfarbe gemischt, dunkel 18 %, hell 13 %). Beim Wechseln gleitet die Kapsel hinüber und federt leicht.
+- **Abweichung vom Entwurf:** Die Tabs sind nicht gleich breit, sondern so breit wie ihr Name plus gleich viel Luft. Bei gleich breiten Tabs ragte „Sammlung“ unten aus der runden Kapsel. Deshalb misst `app.js` den aktiven Tab (`--x`, `--w`), auch nach dem Drehen des Geräts und wenn die Schrift geladen ist. Unter 360 Pixel Breite sind die Namen 11 Pixel groß.
+- **MIND-Knopf:** 64 rund, rechts neben der Leiste, Fläche in der Farbe des Funkens mit weichem Glanz. Kein Name darunter, für Vorleser heißt er „MIND“. Drückt sich ein und glimmt wie bisher.
+- **Funke dunkel:** `--sparkOn` ist im Standard „Puls“ jetzt dunkel (`#1B1A21`) statt weiß. Weiß auf Koralle hatte nur 2,6 : 1 Kontrast, dunkel hat 6,7 : 1. Das gilt auch für die kleinen Funke-Felder im Chat. In den anderen Themes war das Zeichen schon dunkel.
+- **Sonst:** „Rückgängig“ sitzt immer 12 Pixel über der Leiste. Unter dem Inhalt bleiben 120 Pixel frei. Neue Werte in `tokens.css`: `--glassLine`, `--glassHi`, `--glassShadow`, `--tabMix`, `--tab-b`, `--tab-h`, `--t-glide`.
+- **Tests:** `tests/logik.html` hat 204 Tests (vorher 203). Geändert und neu: Kapsel liegt genau hinter dem aktiven Tab (auch schon beim Start), „Sammlung“ hat Luft in seiner Kapsel, MIND steht außerhalb der Leiste und wechselt den Bereich nicht, Funke in „Puls“ dunkel.
+- **Teststand:** 204 von 204 grün in Chrome mit Animationen. Angesehen in Chrome: dunkel und hell, Theme Wald, 320 bis 430 Pixel breit, Querformat, Mac. **Nicht geprüft:** ein echtes iPhone (ob das Glas beim Scrollen flüssig bleibt, Abstand nach unten in der installierten App).
+
 ### 2026-11-15 – Design und Animationen: Tab-Leiste wie im Konzept, weniger kleine Schrift, Chat neu, „Rückgängig“, Themes färben die KI
 - **Warum:** Paket 4 von vier (Vault: `Habit Tracker/MIND – Fable Auftrag 4 (Design und Animationen).md`). Pauls Wünsche vom 12. und 13.11.: viel weniger kleine Schrift und Kleinkram, größere Symbole, kein weißer Rahmen um „Schließen“, Tab-Leiste wie im Konzept „Puls + KI“, Einstellungen wie beim iPhone, Animationen wie in professionellen Apps, Themes färben auch die KI.
 - **Kein neuer Funktionsumfang außer „Rückgängig“.** Daten, Datenbank und Server-Funktionen sind unverändert, **keine SQL**. `logic.js` und `config.js` sind unverändert (die Push-Funktion muss nicht neu ausgerollt werden).

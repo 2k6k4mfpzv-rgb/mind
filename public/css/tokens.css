@@ -23,28 +23,35 @@
   --r-pill:99px;--r-sheet:28px;--r-tile:24px;--r-panel:22px;--r-toast:16px;--r-field:14px;--r-ico:12px;--r-cell:11px;
 
   /* Schatten */
-  --shadow-toast:0 6px 24px rgba(0,0,0,.2);--shadow-orb:0 6px 18px rgba(0,0,0,.24);
+  --shadow-toast:0 6px 24px rgba(0,0,0,.2);
+
+  /* Glas der Tab-Leiste: feiner Rand, Glanzkante innen oben, Schatten, und wie viel Akzent in der Kapsel hinter dem
+     aktiven Tab steckt. Hängt nur an hell oder dunkel, nicht am Theme. --tab-b: Abstand der Leiste zum unteren Rand
+     (am iPhone mit Home-Balken 26, sonst 12), --tab-h: ihre Höhe. */
+  --glassLine:rgba(255,255,255,.09);--glassHi:rgba(255,255,255,.10);--glassShadow:0 10px 30px rgba(0,0,0,.38);--tabMix:18%;
+  --tab-b:max(12px,calc(env(safe-area-inset-bottom,0px) - 8px));--tab-h:64px;
 
   /* Schriftgrößen. Kleiner als --fs-1 wird nichts, außer den Namen in der Tab-Leiste und der Plakette PRO. */
   --fs-1:.8rem;--fs-2:.88rem;--fs-3:.95rem;--fs-4:1rem;--fs-5:1.25rem;--fs-6:1.5rem;
 
   /* Bewegung: zwei Kurven, wenige Dauern. --ease gleitet weich aus, --spring federt leicht über das Ziel hinaus
-     (Füllstand, Haken, Blätter), --drain wird schneller und endet ohne Nachlauf (eine Kachel leert sich). Alle Animationen bewegen nur transform und opacity. Nichts bewegt sich von selbst,
+     (Füllstand, Haken, Blätter), --drain wird schneller und endet ohne Nachlauf (eine Kachel leert sich). Alle Animationen bewegen nur transform und opacity (einzige Ausnahme: die Kapsel der Tab-Leiste ändert auch ihre Breite). Nichts bewegt sich von selbst,
      außer der ganz ruhigen Welle auf einer halb vollen Kachel. --t-out muss zu OUT in js/ui/dialog.js passen. */
   --ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.34,1.45,.64,1);--drain:cubic-bezier(.4,0,1,1);
-  --t-press:.15s;--t-out:.17s;--t-drain:.3s;--t-switch:.2s;--t-tab:.24s;--t-fade:.3s;--t-sheet:.42s;--t-pop:.45s;--t-ring:.5s;--t-fill:.55s;--t-slosh:.9s;--t-wave:9s;
+  --t-press:.15s;--t-out:.17s;--t-drain:.3s;--t-switch:.2s;--t-tab:.24s;--t-fade:.3s;--t-glide:.34s;--t-sheet:.42s;--t-pop:.45s;--t-ring:.5s;--t-fill:.55s;--t-slosh:.9s;--t-wave:9s;
 
   /* Pro und KI: dunkle Pro-Fläche und der Funke. Diese Werte sind in hell und dunkel gleich, daran erkennt man die
      KI-Stellen überall wieder. Jedes Theme der Sammlung bringt seine eigenen mit (seit Paket 4), im Standard „Puls“
      ist der Funke Koralle. --spark Funke auf der Pro-Fläche und Fläche des MIND-Knopfs, --sparkS Funke auf normalem
-     Grund, --sparkOn Zeichen auf dem MIND-Knopf. */
-  --pro:#1B1A21;--proInk:#F4F2F8;--proMute:#A8A4B3;--spark:#FF7A59;--sparkS:#FF7A59;--sparkOn:#FFFFFF;
+     Grund, --sparkOn Zeichen auf dem MIND-Knopf (seit 16.11.2026 auch in „Puls“ dunkel, weiß war auf Koralle zu schwach). */
+  --pro:#1B1A21;--proInk:#F4F2F8;--proMute:#A8A4B3;--spark:#FF7A59;--sparkS:#FF7A59;--sparkOn:#1B1A21;
 
   /* Ebenen */
   --z-tabs:5;--z-toast:6;
 }
-@media (prefers-color-scheme:light){:root:not([data-theme="dark"]),[data-theme="puls"]{--bg:#FAF8F5;--panel:#FFFFFF;--ink:#1B1A21;--mute:#6B6876;--line:#ECE9F0;--line2:#D9D5DF;--cell:#F0EDF2;--moo:#F0EDF2;--hi:#1B1A21;--on:#FAF8F5;--acc:#F26B4F;--accT:#C2401E;color-scheme:light}}
-:root[data-theme="light"]{--bg:#FAF8F5;--panel:#FFFFFF;--ink:#1B1A21;--mute:#6B6876;--line:#ECE9F0;--line2:#D9D5DF;--cell:#F0EDF2;--moo:#F0EDF2;--hi:#1B1A21;--on:#FAF8F5;--acc:#F26B4F;--accT:#C2401E;color-scheme:light}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]),[data-theme="puls"]{--bg:#FAF8F5;--panel:#FFFFFF;--ink:#1B1A21;--mute:#6B6876;--line:#ECE9F0;--line2:#D9D5DF;--cell:#F0EDF2;--moo:#F0EDF2;--hi:#1B1A21;--on:#FAF8F5;--acc:#F26B4F;--accT:#C2401E;color-scheme:light}
+  :root:not([data-theme="dark"]){--glassLine:rgba(27,26,33,.07);--glassHi:rgba(255,255,255,.85);--glassShadow:0 8px 24px rgba(27,26,33,.13);--tabMix:13%}}
+:root[data-theme="light"]{--glassLine:rgba(27,26,33,.07);--glassHi:rgba(255,255,255,.85);--glassShadow:0 8px 24px rgba(27,26,33,.13);--tabMix:13%;--bg:#FAF8F5;--panel:#FFFFFF;--ink:#1B1A21;--mute:#6B6876;--line:#ECE9F0;--line2:#D9D5DF;--cell:#F0EDF2;--moo:#F0EDF2;--hi:#1B1A21;--on:#FAF8F5;--acc:#F26B4F;--accT:#C2401E;color-scheme:light}
 
 /* --- Themes der Sammlung (Puls Schritt 3). Namen und Schwellen stehen in js/config.js (THEMES). ---
    Jedes Theme tauscht nur die Farben. Die 8 Habit-Farben bleiben gleich. Alle Textfarben sind auf Kontrast geprüft
