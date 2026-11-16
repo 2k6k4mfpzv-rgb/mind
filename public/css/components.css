@@ -77,13 +77,15 @@ button.hint{text-decoration:underline;text-underline-offset:3px}
 
 /* Tab-Leiste unten (seit 16.11.2026, Variante B): eine schwebende Glas-Leiste mit den vier Bereichen, daneben der
    runde MIND-Knopf. Er ist kein Bereich, sondern öffnet den Chat, deshalb steht er für sich. Der Inhalt scrollt
-   hinter dem Glas durch. Die Tabs sind so breit wie ihr Name plus gleich viel Luft (sonst ragt „Sammlung“ aus der Kapsel). Maße und Glas-Werte: tokens.css. Auf breiten Bildschirmen bleibt alles mittig beisammen. */
+   hinter dem Glas durch. Die Tabs sind so breit wie ihr Name plus Luft (sonst ragt „Sammlung“ aus der Kapsel). Das längste Wort
+   bekommt doppelt so viel Luft, sonst wirkt seine Kapsel knapp: Der Name sitzt unten, wo die Kapsel schmaler wird. Maße und Glas-Werte: tokens.css. Auf breiten Bildschirmen bleibt alles mittig beisammen. */
 .tabs{position:fixed;left:max(var(--sp-3),env(safe-area-inset-left,0px));right:max(var(--sp-3),env(safe-area-inset-right,0px));bottom:var(--tab-b);z-index:var(--z-tabs);max-width:420px;margin:0 auto;display:flex;align-items:center;gap:10px}
-.tbar{position:relative;flex:1;min-width:0;height:var(--tab-h);padding:5px;display:flex;overflow:hidden;border-radius:var(--r-pill);border:1px solid var(--glassLine);background:var(--panel);background:color-mix(in srgb,var(--panel) 78%,transparent);-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%);box-shadow:inset 0 1px 0 var(--glassHi),var(--glassShadow)}
+.tbar{position:relative;flex:1;min-width:0;height:var(--tab-h);padding:3px;display:flex;overflow:hidden;border-radius:var(--r-pill);border:1px solid var(--glassLine);background:var(--panel);background:color-mix(in srgb,var(--panel) 78%,transparent);-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%);box-shadow:inset 0 1px 0 var(--glassHi),var(--glassShadow)}
 /* Ohne Weichzeichnen (alter Browser) wäre das Glas zu durchsichtig: dann fast deckend */
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.tbar{background:color-mix(in srgb,var(--panel) 96%,transparent)}}
-.tbar button{position:relative;z-index:1;flex:1 1 auto;min-width:0;height:52px;padding:0 var(--sp-3);border-radius:var(--r-pill);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--mute);color:color-mix(in srgb,var(--ink) 68%,transparent);font-size:.75rem;font-weight:600;letter-spacing:.01em;line-height:1.15;transition:color var(--t-switch),transform var(--t-press)}
+.tbar button{position:relative;z-index:1;flex:1 1 auto;min-width:0;height:56px;padding:0 var(--sp-2);border-radius:var(--r-pill);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--mute);color:color-mix(in srgb,var(--ink) 68%,transparent);font-size:.75rem;font-weight:600;letter-spacing:.01em;line-height:1.1;transition:color var(--t-switch),transform var(--t-press)}
 .tbar button:active,.mind:active{transform:scale(.94)}
+.tbar [data-tab="sammlung"]{flex-grow:2}
 .tbar button[aria-current="page"]{color:var(--accT)}
 .tbar svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tbar [aria-current="page"] svg{fill:color-mix(in srgb,currentColor 22%,transparent);stroke-width:2}
@@ -92,7 +94,7 @@ button.hint{text-decoration:underline;text-underline-offset:3px}
 /* Kapsel hinter dem aktiven Tab. js/app.js misst den aktiven Tab und setzt --x (Abstand von links) und --w (Breite).
    Beim Wechseln (.glide) gleitet sie hinüber und federt leicht (die Leiste schneidet ab, was dabei über den Rand
    ginge), beim Drehen des Geräts springt sie nur an ihren Platz. */
-.ind{position:absolute;top:5px;left:0;width:var(--w,0px);height:52px;border-radius:var(--r-pill);background:var(--cell);background:color-mix(in srgb,var(--acc) var(--tabMix),var(--panel));transform:translateX(var(--x,5px));pointer-events:none}
+.ind{position:absolute;top:3px;left:0;width:var(--w,0px);height:56px;border-radius:var(--r-pill);background:var(--cell);background:color-mix(in srgb,var(--acc) var(--tabMix),var(--panel));transform:translateX(var(--x,3px));pointer-events:none}
 .tbar.glide .ind{transition:transform var(--t-glide) var(--spring),width var(--t-glide) var(--spring)}
 /* MIND-Knopf: Fläche in der Farbe des Funkens, oben ein weicher Glanz (::before). */
 .mind{position:relative;flex:none;width:var(--tab-h);height:var(--tab-h);border-radius:50%;display:grid;place-items:center;background:var(--spark);color:var(--sparkOn);box-shadow:inset 0 1px 0 rgba(255,255,255,.38),0 10px 24px color-mix(in srgb,var(--spark) 34%,transparent);transition:transform var(--t-press)}

@@ -676,8 +676,9 @@ async function run(){
     doc().querySelector('#tbar [data-tab="heute"]').click();await sleep(30);
     const br=[...doc().querySelectorAll("#tbar button")],sa=br[2],tx=doc().createRange();tx.selectNodeContents(sa.lastChild);
     return r.concat([on().textContent.trim(),passt(),$("v-heute").hidden,br.map(b=>b.textContent.trim()),
-      tx.getBoundingClientRect().width+16<=sa.getBoundingClientRect().width])}, // „Sammlung“ hat links und rechts Luft in seiner Kapsel
-    [true,"Ich",true,false,true,"Verlauf",true,"Heute",true,false,["Heute","Verlauf","Sammlung","Ich"],true]);
+      tx.getBoundingClientRect().width+32<=sa.getBoundingClientRect().width, // „Sammlung“ hat links und rechts mindestens 16 Pixel Luft in seiner Kapsel
+      sa.querySelector("svg").getBoundingClientRect().top-sa.getBoundingClientRect().top>=7,sa.getBoundingClientRect().bottom-tx.getBoundingClientRect().bottom>=7])}, // und oben und unten mindestens 7
+    [true,"Ich",true,false,true,"Verlauf",true,"Heute",true,false,["Heute","Verlauf","Sammlung","Ich"],true,true,true]);
   await ta("MIND ist kein Bereich: eigener runder Knopf neben der Leiste, mit Namen für Vorleser. Er öffnet den Chat und wechselt den Bereich nicht",async()=>{
     const m=doc().querySelector('#tabs [data-ki]'),cs=W.getComputedStyle(m);
     m.click();await sleep(50);
