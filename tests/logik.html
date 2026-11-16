@@ -381,6 +381,10 @@ async function run(){
   t("Freie Themes sind Knöpfe, noch nicht freie zeigen nur den Weg (kein Knopf, kein Schloss)",()=>
     [[...doc.querySelectorAll("#ths button.th")].map(b=>b.dataset.th),[...doc.querySelectorAll("#ths div.th small")].map(x=>x.textContent)],
     [[""].concat(free),[`noch ${150-N} Tage`,`noch ${250-N} Tage`]]);
+  t("Alle Theme-Karten fangen oben an: Die Vorschau sitzt überall gleich hoch, auch wenn die Karte daneben höher ist (ein freies Theme neben einem mit Balken)",()=>{
+    const v=$("v-sammlung"),war=v.hidden;v.hidden=false;
+    const k=[...doc.querySelectorAll("#ths .th")],ab=k.map(c=>Math.round(c.querySelector(".tp").getBoundingClientRect().top-c.getBoundingClientRect().top)),hoch=k.map(c=>Math.round(c.getBoundingClientRect().height));
+    v.hidden=war;return [k.length,hoch[0]>0,new Set(ab).size,new Set(hoch).size>1]},[7,true,1,true]);
   await ta("Theme antippen: sofort angewendet, im Profil gespeichert, auf dem Gerät gemerkt",async()=>{
     doc.querySelector('#ths [data-th="wald"]').click();const sofort=root().dataset.theme;await quiet();
     return [sofort,prof().theme,localStorage.getItem("mind-theme"),doc.querySelector('#ths [data-th="wald"]').getAttribute("aria-checked"),W.getComputedStyle(root()).getPropertyValue("--acc").trim()!==""]},["wald","wald","wald","true",true]);
@@ -686,6 +690,11 @@ async function run(){
       tx.getBoundingClientRect().width+32<=sa.getBoundingClientRect().width, // „Sammlung“ hat links und rechts mindestens 16 Pixel Luft in seiner Kapsel
       sa.querySelector("svg").getBoundingClientRect().top-sa.getBoundingClientRect().top>=7,sa.getBoundingClientRect().bottom-tx.getBoundingClientRect().bottom>=7])}, // und oben und unten mindestens 7
     [true,"Ich",true,false,true,"Verlauf",true,"Heute",true,false,["Heute","Verlauf","Sammlung","Ich"],true,true,true]);
+  await ta("Kapsel bei „Ich“ (kürzester Name): nie schmaler als hoch und am Ende der Leiste rundum gleich weit vom Rand",async()=>{
+    doc().querySelector('#tbar [data-tab="ich"]').click();await sleep(500);
+    const k=doc().querySelector("#tbar .ind").getBoundingClientRect(),b=$("tbar").getBoundingClientRect(),schmal=W.innerWidth<360;
+    const r=[schmal||k.width>=k.height-.5,schmal||Math.abs((b.right-k.right)-(k.top-b.top))<=1];
+    doc().querySelector('#tbar [data-tab="heute"]').click();await sleep(30);return r},[true,true]);
   await ta("MIND ist kein Bereich: eigener runder Knopf neben der Leiste, mit Namen für Vorleser. Er öffnet den Chat und wechselt den Bereich nicht",async()=>{
     const m=doc().querySelector('#tabs [data-ki]'),cs=W.getComputedStyle(m);
     m.click();await sleep(50);

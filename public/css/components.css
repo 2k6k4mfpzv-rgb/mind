@@ -88,12 +88,14 @@ button.hint{text-decoration:underline;text-underline-offset:3px}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.tbar{background:color-mix(in srgb,var(--panel) 96%,transparent)}}
 .tbar button{position:relative;z-index:1;flex:1 1 auto;min-width:0;height:56px;padding:0 var(--sp-2);border-radius:var(--r-pill);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--mute);color:color-mix(in srgb,var(--ink) 68%,transparent);font-size:.75rem;font-weight:600;letter-spacing:.01em;line-height:1.1;transition:color var(--t-switch),transform var(--t-press)}
 .tbar button:active,.mind:active{transform:scale(.94)}
+/* Kein Tab schmaler als hoch: Sonst wird die Kapsel bei „Ich“ zum Ei und folgt am Ende der Leiste nicht mehr deren Rundung. */
+.tbar button{min-width:56px}
 .tbar [data-tab="sammlung"]{flex-grow:2}
 .tbar button[aria-current="page"]{color:var(--accT)}
 .tbar svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tbar [aria-current="page"] svg{fill:color-mix(in srgb,currentColor 22%,transparent);stroke-width:2}
 /* Sehr schmale Handys (unter 360 breit): Namen etwas kleiner, sonst stoßen „Verlauf“ und „Sammlung“ aneinander */
-@media (max-width:359px){.tabs{gap:var(--sp-2)}.tbar button{font-size:.6875rem;letter-spacing:0}}
+@media (max-width:359px){.tabs{gap:var(--sp-2)}.tbar button{min-width:0;font-size:.6875rem;letter-spacing:0}}
 /* Kapsel hinter dem aktiven Tab. js/app.js misst den aktiven Tab und setzt --x (Abstand von links) und --w (Breite).
    Beim Wechseln (.glide) gleitet sie hinüber und federt leicht (die Leiste schneidet ab, was dabei über den Rand
    ginge), beim Drehen des Geräts springt sie nur an ihren Platz. */
@@ -303,7 +305,9 @@ details.restore[open] summary svg{transform:rotate(90deg)}
    sie zeigen nur, wie weit es noch ist. */
 #v-sammlung .kc{margin-top:0}
 .ths{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--sp-3);margin-top:var(--sp-4)}
-.th{position:relative;display:block;text-align:left;padding:var(--sp-2) var(--sp-2) var(--sp-3);border-radius:var(--r-tile);background:var(--panel);border:1px solid var(--line)}
+/* Spalte, die oben anfängt: Ein freies Theme ist ein <button>, und der setzt seinen Inhalt sonst in die Mitte, wenn die
+   Karte daneben höher ist (z. B. „Wald“ neben „Sand“ mit Fortschrittsbalken). */
+.th{position:relative;display:flex;flex-direction:column;justify-content:flex-start;text-align:left;padding:var(--sp-2) var(--sp-2) var(--sp-3);border-radius:var(--r-tile);background:var(--panel);border:1px solid var(--line)}
 button.th{transition:transform var(--t-press)}
 button.th:active{transform:scale(.97)}
 .th[aria-checked="true"]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
